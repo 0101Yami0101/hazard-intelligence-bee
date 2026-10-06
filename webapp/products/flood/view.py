@@ -48,6 +48,9 @@ from core.settings import map_settings
 VIEWS = [("🎯", "Live forecast"), ("🗺️", "Flood-prone ground"), ("💧", "Catchments")]
 # Reached from the ℹ️ popover (products/__init__.py extra_nav), not the sidebar.
 METHOD_VIEW = "How to read this forecast"
+# Catchments to watch: as many as fit beside the map without the side panel
+# running past it (ui.MAP_H).
+WATCH_N = 6
 
 # Catchment-wetness ramp — BLUE, deliberately not the green-to-red hazard ramp.
 # "A lot of water is coming" and "this is dangerous" are different statements,
@@ -156,16 +159,17 @@ def _signals(tag: str, _rain, _trig, _rain_pt, _sub, _nxt, _order):
 
 
 def _day_buttons(prefix: str, names: list[str], vals: list[str], colors: list[str],
-                 state_key: str, later_from: int, help_later: str) -> None:
+                 state_key: str, later_from: int, help_later: str, head: str = "") -> None:
     """The day picker the FloodSense pages share: 4 per row, a coloured top
-    edge, later days dashed."""
+    edge, later days dashed. `head`: the section title above it, drawn in the
+    same element as the colours (an element of its own takes a gap)."""
     css = ""
     for j, col in enumerate(colors):
         css += f".st-key-{prefix}{j} button{{border-top:3px solid {col}!important}}"
         if j >= later_from:
             css += (f".st-key-{prefix}{j} button{{border-left-style:dashed!important;"
                     f"border-right-style:dashed!important;border-bottom-style:dashed!important}}")
-    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    st.markdown(f"<style>{css}</style>{head}", unsafe_allow_html=True)
     for row in range(0, len(names), 4):
         cols = st.columns(4, gap="small")
         for col, j in zip(cols, range(row, min(row + 4, len(names)))):
@@ -262,18 +266,17 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                 st.markdown(html_, unsafe_allow_html=True)
             towns = _exposed_towns(len(shell.places), shell.places, grid, prob)
             if towns:
-                st.markdown("<div style='height:10px'></div>"
+                css = "".join(f".st-key-fs_pick_{i} button{{border-left:4px solid "
+                              f"{WHERE_COLORS[max(_where_level(v) - 1, 0)]}!important}}"
+                              for i, (_, _, v) in enumerate(towns[:5]))
+                st.markdown(f"<style>{css}</style><div style='height:10px'></div>"
                             + U._sec("Most exposed places", U.badge("estimate", where="right")),
                             unsafe_allow_html=True)
-                css = ""
                 for i, (label, name, v) in enumerate(towns[:5]):
-                    col = WHERE_COLORS[max(_where_level(v) - 1, 0)]
-                    css += f".st-key-fs_pick_{i} button{{border-left:4px solid {col}!important}}"
                     if st.button(f"{name}  ·  **{_where_str(v)}**", key=f"fs_pick_{i}",
                                  width="stretch", help=f"Open {name}"):
                         st.session_state.pending_place = label
                         st.rerun()
-                st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
         else:
             U.place_title(sel)
             if px is None:
@@ -336,7 +339,7 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                                      f"below ~{100*top[0]['p_lo']:.0f}% it held up", "record",
                                      None, "Below this range the numbers roughly matched what "
                                      "happened.", "left"))
-                st.markdown(U._tiles(t, 2), unsafe_allow_html=True)
+                st.markdown(U._tiles(t, 2, grow=True), unsafe_allow_html=True)
 
     # ── centre: the map ──────────────────────────────────────────────────
     with cm, st.container(key="fs_col_m"):
@@ -382,33 +385,36 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                  ("5–10%", area["0.05"] - area["0.10"], WHERE_COLORS[1]),
                  ("10–20%", area["0.10"] - area["0.20"], WHERE_COLORS[2]),
                  ("20%+", area["0.20"], WHERE_COLORS[3])]
-        st.markdown(U._sec("Ground by level", U.badge("estimate", where="left"), note="km²")
-                    + U.hbars([(lab, v, f"{v:,.0f}", col,
-                                f"{v:,.0f} km² of Arunachal is in the {lab} range.")
-                               for lab, v, col in bands]), unsafe_allow_html=True)
+        with st.container(key="fs_r_a"):
+            st.markdown(U._sec("Ground by level", U.badge("estimate", where="left"), note="km²")
+                        + U.hbars([(lab, v, f"{v:,.0f}", col,
+                                    f"{v:,.0f} km² of Arunachal is in the {lab} range.")
+                                   for lab, v, col in bands]), unsafe_allow_html=True)
         teal = WHERE_TEXT[3]
-        st.markdown(
-            "<div style='height:12px'></div>" + U._sec("What it is read from")
-            + U._row("↕", teal, "Height above the river",
-                     U._i("How high the spot sits above the nearest river channel.", "left"))
-            + U._row("◍", teal, "Size of that river",
-                     U._i("How much land drains into that river.", "left"))
-            + U._row("↔", teal, "Distance to it",
-                     U._i("How far the spot is from the channel.", "left"))
-            + U._row("⌒", teal, "How closed-in the valley is",
-                     U._i("Open plains spread a flood wide; narrow valleys keep it close to "
-                          "the river.", "left"))
-            + U._row("◷", U.TIERS["record"][2], f"{n_fl:,} reported floods" if n_fl else "Reported floods",
-                     U._i("Learned from where radar images showed new water around reported "
-                          "floods.", "left")),
-            unsafe_allow_html=True)
-        st.markdown("<div style='height:12px'></div>"
-                    + U._sec("Today's chance", U.badge("outlook", where="left"),
-                             U.badge("forecast", where="left"))
-                    + "<div class='fs-foot' style='margin:0 0 8px'>This map has no rain in it. "
-                      "The forecast adds when, and uses this same layer for where.</div>",
-                    unsafe_allow_html=True)
-        _to_forecast()
+        with st.container(key="fs_r_b"):
+            st.markdown(
+                U._sec("What it is read from") + "<div class='fs-rows fs-grow'>"
+                + U._row("↕", teal, "Height above the river",
+                         U._i("How high the spot sits above the nearest river channel.", "left"))
+                + U._row("◍", teal, "Size of that river",
+                         U._i("How much land drains into that river.", "left"))
+                + U._row("↔", teal, "Distance to it",
+                         U._i("How far the spot is from the channel.", "left"))
+                + U._row("⌒", teal, "How closed-in the valley is",
+                         U._i("Open plains spread a flood wide; narrow valleys keep it close to "
+                              "the river.", "left"))
+                + U._row("◷", U.TIERS["record"][2],
+                         f"{n_fl:,} reported floods" if n_fl else "Reported floods",
+                         U._i("Learned from where radar images showed new water around reported "
+                              "floods.", "left")) + "</div>",
+                unsafe_allow_html=True)
+        with st.container(key="fs_r_c"):
+            st.markdown(U._sec("Today's chance", U.badge("outlook", where="left"),
+                               U.badge("forecast", where="left"))
+                        + "<div class='fs-foot' style='margin:0 0 8px'>This map has no rain in "
+                          "it. The forecast adds when, and uses this same layer for where.</div>",
+                        unsafe_allow_html=True)
+            _to_forecast()
 
     with st.expander("📖  How to read this map"):
         st.markdown(
@@ -538,8 +544,17 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                 unsafe_allow_html=True)
             st.markdown(U._sec("Arunachal average rain", U.badge("input", where="right"),
                                note="mm/day"), unsafe_allow_html=True)
-            st.altair_chart(_rain_chart(days, [float(np.mean(rain[i])) for i in
-                                               range(len(days))], di, fut[0]), width="stretch")
+            mean_mm = [float(np.mean(rain[i])) for i in range(len(days))]
+            st.altair_chart(_rain_chart(days, mean_mm, di, fut[0]), width="stretch")
+            st.markdown(U._tiles([
+                U._tile("Last 3 days", f"{sum(mean_mm[:fut[0]][-3:]):.0f}<small> mm</small>",
+                        "past · state average", "input", None,
+                        "Rain over the three days before today, averaged over the rain points.",
+                        "right"),
+                U._tile("Next 3 days", f"{sum(mean_mm[fut[0]:][:3]):.0f}<small> mm</small>",
+                        "forecast · state average", "input", None,
+                        "Forecast rain for today and the two days after, averaged over the rain "
+                        "points.", "left")], 2, grow=True), unsafe_allow_html=True)
         else:
             U.place_title(sel)
             if b0 is None:
@@ -576,7 +591,7 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                     U._tile("Last 3 days", f"{sum(past[-3:]):.0f}<small> mm</small>", "past",
                             "input", None, where="right"),
                     U._tile("Next 3 days", f"{sum(ahead[:3]):.0f}<small> mm</small>",
-                            "forecast rain", "input", None, where="left")], 2),
+                            "forecast rain", "input", None, where="left")], 2, grow=True),
                     unsafe_allow_html=True)
 
     # ── centre: the map ──────────────────────────────────────────────────
@@ -635,46 +650,47 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
     # ── right: the day picker and the catchments to watch ─────────────────
     with cr, st.container(key="fs_col_r"):
         if PCT is not None:
-            st.markdown(U._sec("7 days", U.badge("input", where="left"),
-                               note="share very wet or wetter"), unsafe_allow_html=True)
-            _day_buttons("flc_d", [day_name(i) for i in fut], [f"{100*v:.0f}%" for v in share],
-                         [WET_COLORS[3]] * len(fut), "flc_day", 3,
-                         "Less sure: forecast rain 4–7 days ahead")
+            with st.container(key="fs_r_a"):
+                _day_buttons("flc_d", [day_name(i) for i in fut],
+                             [f"{100*v:.0f}%" for v in share], [WET_COLORS[3]] * len(fut),
+                             "flc_day", 3, "Less sure: forecast rain 4–7 days ahead",
+                             head=U._sec("7 days", U.badge("input", where="left"),
+                                         note="share very wet or wetter"))
             p, mmv = PCT[di], MM[di]
             order_b = sorted(range(n_b), key=lambda b: (-(p[b] if np.isfinite(p[b]) else -1),
                                                         -mmv[b]))
-            st.markdown("<div style='height:10px'></div>"
-                        + U._sec("Catchments to watch", U.badge("input", where="left"),
-                                 note=day_name(di)), unsafe_allow_html=True)
-            css, seen, n = "", set(), 0
-            for b in order_b:
-                if name_b[b] in seen:
-                    continue
-                seen.add(name_b[b])
-                k = int(np.digitize(p[b], WET_CUTS))
-                css += (f".st-key-fs_pick_{n} button{{border-left:4px solid "
-                        f"{WET_COLORS[k]}!important}}")
-                if st.button(f"{name_b[b]}  ·  **{mmv[b]:.0f} mm**  ·  {WET_NAMES[k]}",
-                             key=f"fs_pick_{n}", width="stretch",
-                             help=f"Upstream {float(AREA[b]):,.0f} km² · for the time of year: "
-                                  f"{100*p[b]:.0f}th percentile. Click to open."):
-                    st.session_state.pending_place = f"{lat_b[b]:.4f}, {lon_b[b]:.4f}"
-                    st.rerun()
-                n += 1
-                if n == 7:
-                    break
-            st.markdown(f"<style>{css}</style>"
-                        "<div class='fs-foot'>Ranked by how unusual, then by millimetres "
-                        + U._i("Each catchment is named after the settlement nearest its "
-                               "middle. Millimetres: mean rain that day over everything "
-                               "draining to it.", "left") + "</div>", unsafe_allow_html=True)
-        st.markdown("<div style='height:12px'></div>"
-                    + U._sec("Flood chance", U.badge("outlook", where="left"),
-                             U.badge("forecast", where="left"))
-                    + "<div class='fs-foot' style='margin:0 0 8px'>The forecast turns this rain "
-                      "— with local rain and the shape of the land — into flood chances.</div>",
-                    unsafe_allow_html=True)
-        _to_forecast()
+            with st.container(key="fs_r_b"):
+                st.markdown(U._sec("Catchments to watch", U.badge("input", where="left"),
+                                   note=day_name(di)), unsafe_allow_html=True)
+                css, seen, n = "", set(), 0
+                for b in order_b:
+                    if name_b[b] in seen:
+                        continue
+                    seen.add(name_b[b])
+                    k = int(np.digitize(p[b], WET_CUTS))
+                    css += (f".st-key-fs_pick_{n} button{{border-left:4px solid "
+                            f"{WET_COLORS[k]}!important}}")
+                    if st.button(f"{name_b[b]}  ·  **{mmv[b]:.0f} mm**  ·  {WET_NAMES[k]}",
+                                 key=f"fs_pick_{n}", width="stretch",
+                                 help=f"Upstream {float(AREA[b]):,.0f} km² · for the time of "
+                                      f"year: {100*p[b]:.0f}th percentile. Click to open."):
+                        st.session_state.pending_place = f"{lat_b[b]:.4f}, {lon_b[b]:.4f}"
+                        st.rerun()
+                    n += 1
+                    if n == WATCH_N:
+                        break
+                st.markdown(f"<style>{css}</style>"
+                            "<div class='fs-foot'>Ranked by how unusual, then by millimetres "
+                            + U._i("Each catchment is named after the settlement nearest its "
+                                   "middle. Millimetres: mean rain that day over everything "
+                                   "draining to it.", "left") + "</div>", unsafe_allow_html=True)
+        with st.container(key="fs_r_c"):
+            st.markdown(U._sec("Flood chance", U.badge("outlook", where="left"),
+                               U.badge("forecast", where="left"))
+                        + "<div class='fs-foot' style='margin:0 0 8px'>The forecast turns this "
+                          "rain — with local rain and the shape of the land — into flood "
+                          "chances.</div>", unsafe_allow_html=True)
+            _to_forecast()
 
     with st.expander("📖  How to read this page"):
         st.markdown(
@@ -696,7 +712,8 @@ def _long_day(d: str) -> str:
 
 
 def _rain_chart(days: list[str], vals: list[float], di: int, first_future: int):
-    """Daily rain, past solid and forecast faded, the chosen day outlined."""
+    """Daily rain, past solid and forecast faded, the chosen day outlined.
+    Its height is what makes the left panel about as tall as the map."""
     import altair as alt
     df = pd.DataFrame({"date": pd.to_datetime(days), "mm": vals,
                        "kind": ["past" if i < first_future else "forecast"
@@ -712,7 +729,7 @@ def _rain_chart(days: list[str], vals: list[float], di: int, first_future: int):
                      tooltip=[alt.Tooltip("date:T", title="day", format="%a %d %b"),
                               alt.Tooltip("mm:Q", title="mm", format=".1f"),
                               alt.Tooltip("kind:N", title="")]))
-    return (bars_.properties(height=130, background="transparent")
+    return (bars_.properties(height=185, background="transparent")
             .configure_axis(labelColor="#8b95a3", titleColor="#8b95a3",
                             gridColor="#8b95a333", domainColor="#8b95a366",
                             tickColor="#8b95a366")

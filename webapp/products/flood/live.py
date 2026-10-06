@@ -65,7 +65,7 @@ from products.flood.data import DIR
 from products.flood.ui import (FS_CSS, MAP_H, RIVER_OTHER, RIVER_QUIET, TIERS,
                                _catchment_of, _clean, _dist, _draw_rivers, _esc, _i,
                                _km, _river_segments, _row, _sec, _tile, _tiles,
-                               _upstream, badge)
+                               _upstream, badge, main_row)
 
 SNAPSHOT = DIR / "live_forecast.json"
 
@@ -682,17 +682,19 @@ def _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot) ->
                               _spark(days, vals, period), more=_error_line(nh)),
                         unsafe_allow_html=True)
         if hot:
-            st.markdown(_sec("Highest outlook", badge("outlook", where="right"),
-                             note="click to open"), unsafe_allow_html=True)
-            css = ""
+            # the colours ride with the heading: an element of its own, even an
+            # empty one, takes a gap in the panel
+            css = "".join(f".st-key-fs_hot_{i} button{{border-left:4px solid "
+                          f"{CHANCE_COLORS[_band(h['p'])] if _band(h['p']) else '#8f99a8'}"
+                          "!important}" for i, h in enumerate(hot[:5]))
+            st.markdown(f"<style>{css}</style>"
+                        + _sec("Highest outlook", badge("outlook", where="right"),
+                               note="click to open"), unsafe_allow_html=True)
             for i, h in enumerate(hot[:5]):
-                css += (f".st-key-fs_hot_{i} button{{border-left:4px solid "
-                        f"{CHANCE_COLORS[_band(h['p'])] if _band(h['p']) else '#8f99a8'}!important}}")
                 if st.button(f"{h['name']}  ·  **{_pct_short(h['p'])}**", key=f"fs_hot_{i}",
                              width="stretch", help=f"Open {h['name']}"):
                     st.session_state.pending_place = h["select"]
                     st.rerun()
-            st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
         return
 
     n1, n2 = st.columns([5, 1], vertical_alignment="center")
@@ -833,15 +835,13 @@ def _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot) ->
                            f"flood days · 10 km · since {_evidence_since(nh)}",
                            "record", "var(--txt)" if n else "var(--dim)",
                            _evidence_line(nh, k), "left" if len(tiles) % 2 else "right"))
-    st.markdown(_tiles(tiles, 2), unsafe_allow_html=True)
+    st.markdown(_tiles(tiles, 2, grow=True), unsafe_allow_html=True)
 
 
 def _outlook_buttons(days: list[str], vals: list[float] | None, scope: str) -> None:
     """The period picker, as the mock-up's 7-day outlook: the whole week,
     then each day, each with its outlook and a bar in its level's colour.
     Days 4-7 dashed: they rest on weaker rain forecasts."""
-    st.markdown(_sec("7-day outlook", badge("outlook", where="left down"), note=scope),
-                unsafe_allow_html=True)
     names = ["7 days"] + ["Today" if datetime.fromisoformat(d).date() == date.today()
                           else datetime.fromisoformat(d).strftime("%a %d") for d in days]
     css = ""
@@ -853,7 +853,9 @@ def _outlook_buttons(days: list[str], vals: list[float] | None, scope: str) -> N
         if j - 1 >= SURE_DAYS:
             css += (f".st-key-flv_d{j} button{{border-left-style:dashed!important;"
                     f"border-right-style:dashed!important;border-bottom-style:dashed!important}}")
-    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    st.markdown(f"<style>{css}</style>"
+                + _sec("7-day outlook", badge("outlook", where="left down"), note=scope),
+                unsafe_allow_html=True)
     for row in (range(0, 4), range(4, len(names))):
         cols = st.columns(4, gap="small")
         for col, j in zip(cols, row):
@@ -876,10 +878,16 @@ def _rivers_panel(rp, levels, own_code, days) -> None:
     if own_code:
         items = ([t for t in items if t[0]["station_code"] == own_code]
                  + [t for t in items if t[0]["station_code"] != own_code])
-    rows = [f"<div class='fs-rhead'><span class='fs-sec-t'>River</span>"
-            f"<span class='fs-sec-t'>{badge('measured', 'The last 30 days of daily highs; dashed red: the line.', 'left', True)} 30 days</span>"
-            f"<span class='fs-sec-t'>{badge('forecast', where='left', mini=True)} chance</span></div>"]
-    for r, xs in items[:7]:
+    def head(more: str = "") -> str:
+        return (f"<div class='fs-rhead{more}'><span class='fs-sec-t'>River</span>"
+                f"<span class='fs-sec-t'>{badge('measured', 'The last 30 days of daily highs; dashed red: the line.', 'left', True)} 30 days</span>"
+                f"<span class='fs-sec-t'>{badge('forecast', where='left', mini=True)} chance</span></div>")
+
+    # Seven rows in one column beside the map. Under the map the list runs
+    # in two columns of four: the stylesheet then shows the eighth row and
+    # the second heading (both marked "more") — ui.py, the main row.
+    rows = []
+    for i, (r, xs) in enumerate(items[:8]):
         p = _river_p(xs)
         d_ = max(xs.items(), key=lambda t: t[1]["p"])[0]
         flag = (" <span style='color:#ff5a73' title='above its line now'>▲</span>"
@@ -887,10 +895,12 @@ def _rivers_panel(rp, levels, own_code, days) -> None:
                 " <span style='color:var(--dim)' title='gauge offline'>⦸</span>"
                 if r.get("gauge_offline") else "")
         own = " own" if r["station_code"] == own_code else ""
-        rows.append(f"<div class='fs-rrow{own}'><div class='fs-rname'>{_esc(r['station_name'])}"
+        rows.append(f"<div class='fs-rrow{own}{' more' if i == 7 else ''}'>"
+                    f"<div class='fs-rname'>{_esc(r['station_name'])}"
                     f"{flag}<small>{r['network']} · {_day_short(d_)}</small></div>"
                     f"{_spark_svg(r.get('history'), r['threshold'])}{_chip(p)}</div>")
-    st.markdown("".join(rows), unsafe_allow_html=True)
+    st.markdown("<div class='fs-rlist fs-grow'>" + head() + "".join(rows[:4]) + head(" more")
+                + "".join(rows[4:]) + "</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='fs-foot'>All {len(rp)} gauges: the river board below "
                 f"{_i('▲ above its line now · ⦸ gauge offline. The chance is for the chosen '
                      'period: the highest day of the week, or that day.', 'left')}</div>",
@@ -1134,10 +1144,11 @@ def _track(snap) -> str:
            "for those days come in" + _near_here_graded(tr.get("near_here")) + ".")
     nhr = tr.get("near_here") or {}
     return (_sec("Track record", note=f"since {first}")
+            + "<div class='fs-tight'>"
             + _tiles([_tile("Written down", f"{tr['forecasts_logged']:,}", "river forecasts"),
                       _tile("Checked", f"{chk.get('n_forecasts', 0):,}", "against the gauge"),
                       _tile("Line reached", f"{chk.get('n_times_threshold_reached', 0)}",
-                            "times so far")], 3)
+                            "times so far")], 3) + "</div>"
             + f"<div class='fs-foot'>Outlook: {nhr.get('issues_logged', 0)} issue"
               f"{'s' if nhr.get('issues_logged', 0) != 1 else ''} logged · "
               f"{nhr.get('issues_graded', 0)} graded {_i(tip, 'left')}</div>")
@@ -1611,7 +1622,7 @@ def render(shell, s, search_row) -> None:
     st.markdown(_tiles(kpis, len(kpis)), unsafe_allow_html=True)
 
     # ── main row: place | map | outlook + conditions ────────────────────
-    cl, cm, cr = st.columns([1.12, 2.5, 1.22], gap="medium")
+    cl, cm, cr = main_row()
     with cl, st.container(key="fs_col_l"):
         _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot)
 
@@ -1808,29 +1819,30 @@ def render(shell, s, search_row) -> None:
                 scope = "anywhere in Arunachal"
         else:
             vals, scope = None, ""
-        _outlook_buttons(days, vals, scope)
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-        tab = st.segmented_control("Conditions", ["Rivers", "Rain", "Soil"], default="Rivers",
-                                   key="flv_cond", label_visibility="collapsed",
-                                   width="stretch")
-        if tab == "Rain":
-            _rain_panel(sel, pl)
-        elif tab == "Soil":
-            _soil_panel(snap, k_sel, sel)
-        else:
-            _rivers_panel(rp, levels, own[0] if own else None, days)
+        with st.container(key="fs_r_a"):
+            _outlook_buttons(days, vals, scope)
+        with st.container(key="fs_r_b"):
+            tab = st.segmented_control("Conditions", ["Rivers", "Rain", "Soil"],
+                                       default="Rivers", key="flv_cond",
+                                       label_visibility="collapsed", width="stretch")
+            if tab == "Rain":
+                _rain_panel(sel, pl)
+            elif tab == "Soil":
+                _soil_panel(snap, k_sel, sel)
+            else:
+                _rivers_panel(rp, levels, own[0] if own else None, days)
 
     # ── what changed · needs attention · track record ────────────────────
     st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3, gap="medium")
     with c1:
-        with st.container(border=True):
+        with st.container(border=True, key="fs_eq_1"):
             st.markdown(_changes(snap, k_sel, sel), unsafe_allow_html=True)
     with c2:
-        with st.container(border=True):
+        with st.container(border=True, key="fs_eq_2"):
             st.markdown(_attention(snap, rp, rivers, chance, hot, when), unsafe_allow_html=True)
     with c3:
-        with st.container(border=True):
+        with st.container(border=True, key="fs_eq_3"):
             st.markdown(_track(snap), unsafe_allow_html=True)
 
     # ── rivers: one gauge's graph | the board of all of them ─────────────

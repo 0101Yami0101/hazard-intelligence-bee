@@ -26,7 +26,7 @@ import core.geo as G
 # is a quieter blue. Width follows the size of the river.
 RIVER_QUIET = "#5cc8ff"
 RIVER_OTHER = "#2a6bb0"
-MAP_H = 560
+MAP_H = 480
 
 
 # The kinds of number (see the module docstring). (glyph, name, colour,
@@ -92,7 +92,7 @@ FS_CSS = """
 .fs-tile{position:relative;background:linear-gradient(180deg,var(--panel-2),var(--panel));
   border:1px solid var(--line);border-radius:14px;padding:10px 13px 11px;min-width:0;}
 .fs-tile-top{display:flex;justify-content:space-between;align-items:center;gap:6px;
-  margin-bottom:6px;min-height:18px;}
+  margin-bottom:6px;min-height:22px;}
 .fs-tile-v{font:700 1.5rem/1.1 Sora,sans-serif;color:var(--txt);letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .fs-tile-v small{font-size:.9rem;color:var(--dim);font-weight:600;margin-left:2px;}
@@ -191,12 +191,69 @@ FS_CSS = """
   padding:6px 12px!important;}
 :is([class*="st-key-flv_d"],[class*="st-key-flc_d"]) button p,:is([class*="st-key-flv_d"],[class*="st-key-flc_d"]) button strong{white-space:nowrap;}
 .st-key-fs_head button p{white-space:nowrap;}
-/* three columns only while each has room: below that the outlook column
-   drops under the map, full width, instead of squeezing everything */
-[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .st-key-fs_col_m){flex-wrap:wrap;}
-[data-testid="stColumn"]:has(.st-key-fs_col_l){min-width:270px;}
-[data-testid="stColumn"]:has(.st-key-fs_col_m){min-width:520px;}
-[data-testid="stColumn"]:has(.st-key-fs_col_r){min-width:330px;}
+/* ---- the main row: place | map | side panel ----
+   Side by side while each has room (1,304 px of page), all three ending on
+   one line. Narrower, the side panel drops under the map and lays its
+   blocks side by side. The width is the row's own (a container query), so
+   the sidebar opening or closing counts as well as the window. The map's
+   620 px is what the whole state needs at its starting zoom. */
+.st-key-fs_main{container-type:inline-size;container-name:fsmain;}
+[data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .st-key-fs_col_m){flex-wrap:nowrap;align-items:stretch;}
+[data-testid="stColumn"]:has(.st-key-fs_col_l){flex:1 1 296px!important;min-width:296px;}
+[data-testid="stColumn"]:has(.st-key-fs_col_m){flex:5 1 620px!important;min-width:620px;}
+[data-testid="stColumn"]:has(.st-key-fs_col_r){flex:1 1 324px!important;min-width:324px;}
+/* each panel fills its column, so their bottom edges line up; so do the
+   cards of any row keyed fs_eq_* */
+[data-testid="stLayoutWrapper"]:has(> :is(.st-key-fs_col_l,.st-key-fs_col_m,.st-key-fs_col_r,.st-key-fs_mapcard,.st-key-fs_r_b,[class*="st-key-fs_eq_"])){flex:1 1 auto;}
+/* what takes up the slack inside a panel: a block marked fs-grow, and the
+   rows of a list of buttons — each only so far, so nothing balloons */
+.st-key-fs_main [data-testid="stElementContainer"]:has(.fs-grow),.st-key-fs_main [data-testid="stElementContainer"] div:has(.fs-grow){display:flex;
+  flex-direction:column;flex:1 1 auto;min-height:0;}
+.fs-grow{flex:1 1 auto;}
+/* Streamlit pulls whatever follows a text block up by 1rem. At the foot of
+   a panel that leaves its last line hanging below the panel's edge. */
+:is(.st-key-fs_col_l,.st-key-fs_col_r,.st-key-fs_r_a,.st-key-fs_r_b,.st-key-fs_r_c,.st-key-fs_mapcard)
+  > [data-testid="stElementContainer"]:last-child [data-testid="stMarkdownContainer"]{margin-bottom:0!important;}
+.fs-tiles.fs-grow{grid-auto-rows:1fr;margin-bottom:0;max-height:var(--cap,none);}
+.fs-hero.fs-grow{display:flex;flex-direction:column;}
+.fs-hero.fs-grow .fs-spark{margin-top:auto;}
+.fs-rlist,.fs-rows{display:flex;flex-direction:column;}
+.fs-rlist .fs-rrow,.fs-rows .fs-row{flex:1 1 auto;max-height:66px;}
+.fs-rrow.more,.fs-rhead.more{display:none;}
+.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]){flex:1 1 auto;max-height:64px;display:flex;flex-direction:column;}
+.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;}
+.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton > div{flex:1 1 auto;min-height:0;}
+.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton > div > span,.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton > div > span > span,
+.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton > div button{height:100%;}
+@container fsmain (max-width:1303px){
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .st-key-fs_col_m){flex-wrap:wrap;}
+  [data-testid="stColumn"]:has(.st-key-fs_col_m){flex:3 1 540px!important;min-width:540px;}
+  [data-testid="stColumn"]:has(.st-key-fs_col_r){flex:1 1 100%!important;}
+  /* the side panel's three blocks: first and last on the left, the list on the right */
+  .st-key-fs_col_r:has(.st-key-fs_r_c){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    column-gap:32px;row-gap:16px;align-content:start;}
+  .st-key-fs_col_r [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_a){grid-column:1;grid-row:1;}
+  .st-key-fs_col_r [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_b){grid-column:2;grid-row:1 / span 2;
+    align-self:stretch!important;height:100%;}
+  .st-key-fs_col_r [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_c){grid-column:1;grid-row:2;align-self:end;}
+  /* the forecast page: its day buttons in one line, its rivers in two columns */
+  .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a{flex-direction:row;flex-wrap:wrap;}
+  .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a > [data-testid="stElementContainer"]{flex:1 1 100%;}
+  .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]{flex:1 1 0;min-width:0;}
+  .fs-rlist{display:grid;grid-auto-flow:column;grid-template-rows:repeat(5,auto);
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;}
+  .fs-rrow.more,.fs-rhead.more{display:grid;}
+}
+@container fsmain (max-width:760px){
+  [data-testid="stColumn"]:has(.st-key-fs_col_l),[data-testid="stColumn"]:has(.st-key-fs_col_m),[data-testid="stColumn"]:has(.st-key-fs_col_r){flex:1 1 100%!important;min-width:0;}
+  .st-key-fs_col_r:has(.st-key-fs_r_c){display:flex;}
+  .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]{flex:1 1 100%;}
+  .fs-rlist{display:flex;}
+  .fs-rrow.more,.fs-rhead.more{display:none;}
+}
+/* a row of small tiles inside a narrow card (the track record) */
+.fs-tight .fs-tile{padding:9px 10px 10px;}
+.fs-tight .fs-tile-v{font-size:1.16rem;}
 @media (max-width:1100px){.fs-tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important;}}
 /* ---- "what this page is not", beside the key ---- */
 .fs-note{margin-left:8px;font-size:.7rem;color:var(--mut);border:1px dashed var(--line);
@@ -252,8 +309,12 @@ def _tile(label: str, value: str, sub: str = "", tier: str | None = None,
             + (f"<div class='fs-tile-s'>{sub}</div>" if sub else "") + "</div>")
 
 
-def _tiles(items: list[str], cols: int) -> str:
-    return (f"<div class='fs-tiles' style='grid-template-columns:repeat({cols},minmax(0,1fr))'>"
+def _tiles(items: list[str], cols: int, grow: bool = False) -> str:
+    """`grow`: in the main row, the tiles take up the panel's spare height
+    (so it ends level with the map) — up to a limit, so none balloons."""
+    rows = -(-len(items) // cols)
+    return (f"<div class='fs-tiles{' fs-grow' if grow else ''}' style='grid-template-columns:"
+            f"repeat({cols},minmax(0,1fr))" + (f";--cap:{rows * 215}px" if grow else "") + "'>"
             f"{''.join(items)}</div>")
 
 
@@ -395,9 +456,11 @@ def key_row(*tiers: str, note: str = "") -> None:
 
 def main_row():
     """Place | map | side panel. Each page puts a keyed container in each
-    column (fs_col_l / fs_col_m / fs_col_r), so the stylesheet can drop the
-    side panel under the map when the screen is too narrow for three."""
-    return st.columns([1.12, 2.5, 1.22], gap="medium")
+    column (fs_col_l / fs_col_m / fs_col_r) and the side panel's blocks in
+    fs_r_a / fs_r_b (/ fs_r_c); the stylesheet does the rest — the three
+    panels end on one line, and the side panel drops under the map when the
+    row (fs_main) is too narrow for three."""
+    return st.container(key="fs_main").columns([1.12, 2.5, 1.22], gap="medium")
 
 
 def place_title(sel, sub: str | None = None) -> None:
@@ -484,10 +547,11 @@ def legend(names, colors, shares=None, subs=None, tip: str = "", syms: str = "")
 
 
 def hero(word: str, value: str, sub: str, when: str, color: str, text: str,
-         icon: str, tier: str, more: str = "", bars_html: str = "") -> str:
+         icon: str, tier: str, more: str = "", bars_html: str = "", grow: bool = False) -> str:
     """The headline card of a page: a word for the level, one big number,
-    what and when, and a row of bars."""
-    return (f"<div class='fs-hero' style='--c:{color};--t:{text}'>"
+    what and when, and a row of bars. `grow`: it takes the panel's spare
+    height, the bars staying at its foot."""
+    return (f"<div class='fs-hero{' fs-grow' if grow else ''}' style='--c:{color};--t:{text}'>"
             f"<div class='fs-hero-top'><div class='fs-hero-ic'>{icon}</div>"
             f"<div style='min-width:0;flex:1'><div class='fs-hero-word'>{word}</div>"
             f"<div class='fs-hero-sub'>{sub}</div></div></div>"
