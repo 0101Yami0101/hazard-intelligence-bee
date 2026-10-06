@@ -75,7 +75,7 @@ def load_elevation():
 
 @st.cache_data(show_spinner=False)
 def load_rain_spine():
-    """The 97 query points and their rainfall climatology.
+    """The rainfall query points (219 since 2026-09-22) and their climatology.
 
     ⚠️ SHARED, not landslide-only. Both hazards are driven by the same rain:
     SlopeSense asks how unusual it is on a slope, FloodSense asks how much of

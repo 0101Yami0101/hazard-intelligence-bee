@@ -32,6 +32,29 @@ def load_static():
 
 
 @st.cache_data(show_spinner=False)
+def load_where():
+    """The calibrated location model (WHERE) on the display grid: chance a
+    spot is under water IF a flood is reported within about 5 km — the same
+    layer the live forecast uses to decide what counts as low ground. Each
+    display cell holds the highest 100 m value inside it. NaN outside the
+    state. Returns (prob, meta)."""
+    z = np.load(DIR / "floodprob.npz")["prob"]
+    meta = json.loads((DIR / "floodprob.json").read_text())
+    prob = np.where(z == meta["nodata"], np.nan, z / meta["scale"]).astype(np.float32)
+    return prob, meta
+
+
+@st.cache_data(show_spinner=False)
+def catchment_points() -> int | None:
+    """How many rainfall points the catchment -> point mapping was built for;
+    None for a bundle from before that was recorded. The mapping holds
+    positions in points.json, so a count that doesn't match the points being
+    fetched means every catchment would read another place's rain."""
+    c = np.load(DIR / "catchments.npz")
+    return int(c["n_points"]) if "n_points" in c.files else None
+
+
+@st.cache_data(show_spinner=False)
 def load_catchments():
     """Basin id per cell, plus the routing graph the rain is carried along."""
     c = np.load(DIR / "catchments.npz")

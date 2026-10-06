@@ -4,7 +4,7 @@
 
 ⚠️ The rainfall half moved to core.rainfall. Fetching live rain and scoring it
 against each point's own climatology is not a landslide idea — FloodSense reads
-the same 97 points — so it belongs to the spine. It is re-exported below so
+the same points — so it belongs to the spine. It is re-exported below so
 this module still reads as one forecast.
 """
 from __future__ import annotations

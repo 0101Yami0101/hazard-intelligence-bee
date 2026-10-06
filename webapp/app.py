@@ -46,8 +46,7 @@ st.set_page_config(page_title="BeeDigital Hazard Platform · Arunachal Pradesh",
 st.markdown(T.CSS, unsafe_allow_html=True)
 # Warm the TLS handshake for the tile hosts before the map asks for them.
 st.markdown(
-    '<link rel="preconnect" href="https://a.basemaps.cartocdn.com">'
-    '<link rel="preconnect" href="https://b.basemaps.cartocdn.com">'
+    '<link rel="preconnect" href="https://server.arcgisonline.com">'
     '<link rel="preconnect" href="https://server.arcgisonline.com">'
     '<link rel="preconnect" href="https://tile.opentopomap.org">',
     unsafe_allow_html=True)

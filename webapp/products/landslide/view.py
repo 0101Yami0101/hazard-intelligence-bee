@@ -1282,7 +1282,7 @@ def render(shell) -> None:
             {"Dataset": "NASA GPM IMERG", "What": "Daily rainfall 2000–2026",
              "Scale": "9,555 days", "Used for": "Rainfall history"},
             {"Dataset": "Open-Meteo", "What": "Live + forecast rainfall",
-             "Scale": "97 points, 7 days", "Used for": "The live forecast"},
+             "Scale": f"{len(PTS['lat'])} points, 7 days", "Used for": "The live forecast"},
             {"Dataset": "Copernicus DEM", "What": "Elevation",
              "Scale": "30 m", "Used for": "Slope, aspect, curvature, wetness"},
             {"Dataset": "SoilGrids", "What": "Soil properties",

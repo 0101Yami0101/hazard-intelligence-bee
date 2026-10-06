@@ -74,15 +74,14 @@ REGISTRY: list[Product] = [
         hazard="Floods",
         icon="◈",
         tagline="7-day river flood outlook · statewide",
-        blurb="Where water collects, measured from the terrain against the "
-              "nearest river channel, multiplied by how much rain is falling "
-              "across the catchment upstream. Large rivers get a forecast; "
-              "mountain streams get a watch, and are labelled as such.",
+        blurb="A daily flood forecast from live rain and 32 river gauges: a "
+              "checked chance of each gauged river reaching danger level, and "
+              "an approximate chance of a flood near every place over the next "
+              "7 days. Every forecast is logged and graded against what happened.",
         accent="#4d8dff",
         status="live",
         nav_key="fl_view",
-        extra_nav=(("📋", "Method & limits",
-                    "Not open yet — still validating this page."),)),
+        extra_nav=(("📋", "How to read this forecast", None),)),
     Product(
         slug="backbone",
         name="Data Backbone",

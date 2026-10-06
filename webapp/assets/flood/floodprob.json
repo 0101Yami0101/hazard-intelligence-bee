@@ -1,0 +1,33 @@
+{
+  "scale": 10000,
+  "nodata": 65535,
+  "meaning": "calibrated probability a 100 m cell is under water GIVEN a flood reported within about 5 km (labels: new water on radar images around the report); display cells report the MAX of the 100 m cells inside them",
+  "second_stage": false,
+  "not": "an annual flood chance - multiply by the WHEN forecast for that",
+  "model": "models/flood_where/full.txt + calibrator_isotonic.pkl",
+  "trained_utc": "2026-09-21T09:46:02Z",
+  "oof_auc_in_arunachal": 0.863052789297742,
+  "oof_auc_steep": 0.6728362320028061,
+  "n_floods_trained_on": 2806,
+  "area_km2_in_state": {
+    "0.02": 2623.4,
+    "0.05": 1793.5,
+    "0.10": 1047.9,
+    "0.20": 187.9,
+    "0.30": 13.6
+  },
+  "checked_in_arunachal_top": [
+    {
+      "p_lo": 0.0716,
+      "p_hi": 0.1706,
+      "said": 0.1187,
+      "happened": 0.0587
+    },
+    {
+      "p_lo": 0.1706,
+      "p_hi": 0.3878,
+      "said": 0.2329,
+      "happened": 0.126
+    }
+  ]
+}

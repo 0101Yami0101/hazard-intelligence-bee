@@ -52,8 +52,12 @@ LIFT_M = 60.0        # hold patches clear of the mesh so they never z-fight
 # Tile styles WITH cartography baked in — roads, rivers and place names arrive
 # as part of the texture, so the 3D view needs no separate label layer.
 TEX = {
-    "Dark": ("https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-             "© CARTO · © OpenStreetMap"),
+    # Was CARTO dark_all; CARTO now bakes "API KEY REQUIRED" into its tiles
+    # (2026-09-25). Esri's dark canvas carries no place names, so the dark 3D
+    # view loses its baked-in labels — the trade for a clean, keyless tile.
+    "Dark": ("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/"
+             "World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+             "© Esri — World Dark Gray Canvas"),
     "Light": ("https://server.arcgisonline.com/ArcGIS/rest/services/"
               "World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
               "© Esri — World Topo Map"),

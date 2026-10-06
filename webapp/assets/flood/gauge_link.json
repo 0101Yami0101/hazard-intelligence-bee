@@ -1,0 +1,554 @@
+{
+  "codes": [
+    "001-UBDDIB",
+    "001NEID3",
+    "002-ubddib",
+    "002Neid3",
+    "003-UBDDIB",
+    "003NEID-3",
+    "004-UBDDIB",
+    "005-UBDDIB",
+    "007NEID3",
+    "008-ubddib",
+    "009-UBDDIB",
+    "020-UBDDIB",
+    "027-UBDDIB",
+    "029-UBDDIB",
+    "058-UBDDIB",
+    "059-UBDDIB",
+    "070-UBDDIB",
+    "078-UBDDIB",
+    "Aalo_1",
+    "Basar_1",
+    "Changlang",
+    "Changlang_1",
+    "Darak(Kamba)",
+    "Deomali_1",
+    "Kamlang_1",
+    "Kanubari_1",
+    "Miao_2",
+    "Sagalee_1",
+    "Tenga_1",
+    "Tengapani Bridge_1",
+    "Tissa Camp_1",
+    "Ziro"
+  ],
+  "relation": {
+    "1": "gauge upstream \u2014 this river flows from the gauge to here",
+    "2": "gauge downstream \u2014 this river flows past the gauge"
+  },
+  "km": "along the river, km x 10 (km10)",
+  "rule": {
+    "river": "nearest trunk channel (>= 100 km2) within 25 m above, else nearest small channel (>= 10 km2) within 25 m",
+    "same_path": "steepest-rise flow walk, as build_gauge_reach.py",
+    "same_river": "drainage area within x0.5-x2",
+    "near": "within 60 km along the river",
+    "gauge_placement": "nearest channel within 2 km of the listed location that is the gauge's size (CWC published catchment x0.5-x2; NWDP big enough for its typical monsoon flow at 0.4 m3/s per km2); none -> not linked"
+  },
+  "per_gauge": {
+    "001-UBDDIB": {
+      "name": "Kibithu",
+      "display_cells": 188,
+      "floodable_km2": 6.6,
+      "listed": [
+        28.257222,
+        97.025833
+      ],
+      "basis": "CWC catchment 12,949 km2",
+      "placed": [
+        28.257,
+        97.02565
+      ],
+      "moved_km": 0.0,
+      "river_km2": 11880
+    },
+    "001NEID3": {
+      "name": "Rho Basti",
+      "display_cells": 157,
+      "floodable_km2": 0.9,
+      "listed": [
+        27.622778,
+        92.013611
+      ],
+      "basis": "CWC catchment 1,992 km2",
+      "placed": [
+        27.62318,
+        92.01333
+      ],
+      "moved_km": 0.0,
+      "river_km2": 2926
+    },
+    "002-ubddib": {
+      "name": "Tuting",
+      "display_cells": 206,
+      "floodable_km2": 10.6,
+      "listed": [
+        28.995,
+        94.886944
+      ],
+      "basis": "catchment 243,264 km2, mostly outside the map",
+      "placed": [
+        29.00071,
+        94.8987
+      ],
+      "moved_km": 1.3,
+      "river_km2": 4331
+    },
+    "002Neid3": {
+      "name": "Murga Bridge",
+      "display_cells": 54,
+      "floodable_km2": 0.6,
+      "listed": [
+        27.613889,
+        92.026389
+      ],
+      "basis": "no published catchment",
+      "placed": [
+        27.62412,
+        92.01839
+      ],
+      "moved_km": 1.36,
+      "river_km2": 842
+    },
+    "003-UBDDIB": {
+      "name": "Yinkiang",
+      "display_cells": 243,
+      "floodable_km2": 14.9,
+      "listed": [
+        28.643611,
+        95.016944
+      ],
+      "basis": "no published catchment",
+      "placed": [
+        28.64348,
+        95.016
+      ],
+      "moved_km": 0.1,
+      "river_km2": 8819
+    },
+    "003NEID-3": {
+      "name": "Pangin",
+      "display_cells": 307,
+      "floodable_km2": 23.0,
+      "listed": [
+        28.233611,
+        95.002778
+      ],
+      "basis": "catchment 254,697 km2, mostly outside the map",
+      "placed": [
+        28.234,
+        95.00315
+      ],
+      "moved_km": 0.0,
+      "river_km2": 15924
+    },
+    "004-UBDDIB": {
+      "name": "Lemeking",
+      "display_cells": 260,
+      "floodable_km2": 9.8,
+      "listed": [
+        28.372778,
+        93.559722
+      ],
+      "basis": "CWC catchment 11,318 km2",
+      "placed": [
+        28.373,
+        93.56081
+      ],
+      "moved_km": 0.1,
+      "river_km2": 11284
+    },
+    "005-UBDDIB": {
+      "name": "Passighat",
+      "display_cells": 733,
+      "floodable_km2": 141.7,
+      "listed": [
+        28.077778,
+        95.335556
+      ],
+      "basis": "catchment 256,572 km2, mostly outside the map",
+      "placed": [
+        28.0789,
+        95.33804
+      ],
+      "moved_km": 0.22,
+      "river_km2": 18126
+    },
+    "007NEID3": {
+      "name": "Jollang",
+      "display_cells": 355,
+      "floodable_km2": 8.1,
+      "listed": [
+        27.073333,
+        93.615
+      ],
+      "basis": "no published catchment",
+      "placed": [
+        27.07373,
+        93.61472
+      ],
+      "moved_km": 0.0,
+      "river_km2": 136
+    },
+    "008-ubddib": {
+      "name": "Miao",
+      "display_cells": 810,
+      "floodable_km2": 129.6,
+      "listed": [
+        27.493611,
+        96.219167
+      ],
+      "basis": "CWC catchment 2,443 km2",
+      "placed": [
+        27.49461,
+        96.2199
+      ],
+      "moved_km": 0.14,
+      "river_km2": 2441
+    },
+    "009-UBDDIB": {
+      "name": "Namsai",
+      "display_cells": 840,
+      "floodable_km2": 165.1,
+      "listed": [
+        27.635556,
+        95.848056
+      ],
+      "basis": "CWC catchment 2,664 km2",
+      "placed": [
+        27.63624,
+        95.84827
+      ],
+      "moved_km": 0.1,
+      "river_km2": 2634
+    },
+    "020-UBDDIB": {
+      "name": "Daporizo",
+      "display_cells": 327,
+      "floodable_km2": 14.9,
+      "listed": [
+        27.993333,
+        94.223333
+      ],
+      "basis": "CWC catchment 15,104 km2",
+      "placed": [
+        27.99409,
+        94.2229
+      ],
+      "moved_km": 0.1,
+      "river_km2": 15114
+    },
+    "027-UBDDIB": {
+      "name": "Seppa",
+      "display_cells": 134,
+      "floodable_km2": 2.2,
+      "listed": [
+        27.356944,
+        93.038611
+      ],
+      "basis": "CWC catchment 3,629 km2",
+      "placed": [
+        27.35675,
+        93.03893
+      ],
+      "moved_km": 0.0,
+      "river_km2": 3632
+    },
+    "029-UBDDIB": {
+      "name": "Bhalukpong",
+      "display_cells": 163,
+      "floodable_km2": 7.2,
+      "listed": [
+        27.016389,
+        92.642222
+      ],
+      "basis": "CWC catchment 8,966 km2",
+      "placed": [
+        27.01683,
+        92.64264
+      ],
+      "moved_km": 0.0,
+      "river_km2": 8966
+    },
+    "058-UBDDIB": {
+      "name": "Doimukh",
+      "display_cells": 161,
+      "floodable_km2": 11.3,
+      "listed": [
+        27.138333,
+        93.751944
+      ],
+      "basis": "CWC catchment 1,210 km2",
+      "placed": [
+        27.13716,
+        93.75129
+      ],
+      "moved_km": 0.14,
+      "river_km2": 1212
+    },
+    "059-UBDDIB": {
+      "name": "Pagoda",
+      "display_cells": 157,
+      "floodable_km2": 8.0,
+      "listed": [
+        27.773333,
+        95.975833
+      ],
+      "basis": "CWC catchment 176 km2",
+      "placed": [
+        27.77517,
+        95.97663
+      ],
+      "moved_km": 0.22,
+      "river_km2": 127
+    },
+    "070-UBDDIB": {
+      "name": "Tamen",
+      "display_cells": 123,
+      "floodable_km2": 6.6,
+      "listed": [
+        27.76,
+        94.008889
+      ],
+      "basis": "CWC catchment 7,569 km2",
+      "placed": [
+        27.76024,
+        94.0082
+      ],
+      "moved_km": 0.1,
+      "river_km2": 7568
+    },
+    "078-UBDDIB": {
+      "name": "Pare HEP",
+      "display_cells": 162,
+      "floodable_km2": 2.9,
+      "listed": [
+        27.236944,
+        93.815556
+      ],
+      "basis": "CWC catchment 824 km2",
+      "placed": [
+        27.23613,
+        93.81255
+      ],
+      "moved_km": 0.32,
+      "river_km2": 828
+    },
+    "Aalo_1": {
+      "name": "Aalo",
+      "display_cells": 68,
+      "floodable_km2": 2.9,
+      "listed": [
+        28.13126,
+        94.793982
+      ],
+      "basis": "typical monsoon flow 25 m3/s",
+      "placed": [
+        28.13131,
+        94.79459
+      ],
+      "moved_km": 0.1,
+      "river_km2": 289
+    },
+    "Basar_1": {
+      "name": "Basar",
+      "display_cells": 103,
+      "floodable_km2": 2.7,
+      "listed": [
+        27.983,
+        94.672
+      ],
+      "basis": "typical monsoon flow 6 m3/s",
+      "placed": [
+        27.98216,
+        94.67011
+      ],
+      "moved_km": 0.22,
+      "river_km2": 96
+    },
+    "Changlang": {
+      "name": "Changlang",
+      "display_cells": 0,
+      "floodable_km2": 0.0,
+      "listed": [
+        27.12,
+        95.71
+      ],
+      "basis": "typical monsoon flow 101 m3/s",
+      "placed": null,
+      "not_linked": "its published coordinates are wrong; only Changlang town is known, not which stretch of river it measures"
+    },
+    "Changlang_1": {
+      "name": "Changlang (2nd station)",
+      "display_cells": 248,
+      "floodable_km2": 8.4,
+      "listed": [
+        27.133,
+        95.734
+      ],
+      "basis": "typical monsoon flow 68 m3/s",
+      "placed": [
+        27.13329,
+        95.73456
+      ],
+      "moved_km": 0.1,
+      "river_km2": 566
+    },
+    "Darak(Kamba)": {
+      "name": "Darak (Kamba)",
+      "display_cells": 84,
+      "floodable_km2": 1.7,
+      "listed": [
+        28.259,
+        94.677
+      ],
+      "basis": "typical monsoon flow 121 m3/s",
+      "placed": [
+        28.25915,
+        94.67645
+      ],
+      "moved_km": 0.1,
+      "river_km2": 457
+    },
+    "Deomali_1": {
+      "name": "Deomali",
+      "display_cells": 167,
+      "floodable_km2": 5.3,
+      "listed": [
+        27.2,
+        95.458
+      ],
+      "basis": "typical monsoon flow 72 m3/s",
+      "placed": [
+        27.19974,
+        95.45969
+      ],
+      "moved_km": 0.2,
+      "river_km2": 330
+    },
+    "Kamlang_1": {
+      "name": "Kamlang",
+      "display_cells": 1048,
+      "floodable_km2": 127.5,
+      "listed": [
+        27.757,
+        96.359
+      ],
+      "basis": "typical monsoon flow 69 m3/s",
+      "placed": [
+        27.75649,
+        96.35836
+      ],
+      "moved_km": 0.14,
+      "river_km2": 529
+    },
+    "Kanubari_1": {
+      "name": "Kanubari",
+      "display_cells": 158,
+      "floodable_km2": 2.1,
+      "listed": [
+        26.896,
+        95.29
+      ],
+      "basis": "typical monsoon flow 6 m3/s",
+      "placed": [
+        26.89577,
+        95.29103
+      ],
+      "moved_km": 0.1,
+      "river_km2": 116
+    },
+    "Miao_2": {
+      "name": "Miao (NWDP)",
+      "display_cells": 719,
+      "floodable_km2": 121.5,
+      "listed": [
+        27.443,
+        95.941
+      ],
+      "basis": "typical monsoon flow 196 m3/s",
+      "placed": [
+        27.42772,
+        95.94096
+      ],
+      "moved_km": 1.7,
+      "river_km2": 1374
+    },
+    "Sagalee_1": {
+      "name": "Sagalee",
+      "display_cells": 145,
+      "floodable_km2": 1.5,
+      "listed": [
+        27.214,
+        93.689
+      ],
+      "basis": "typical monsoon flow 11 m3/s",
+      "placed": [
+        27.21422,
+        93.6892
+      ],
+      "moved_km": 0.0,
+      "river_km2": 634
+    },
+    "Tenga_1": {
+      "name": "Tenga",
+      "display_cells": 157,
+      "floodable_km2": 4.1,
+      "listed": [
+        27.203,
+        92.565
+      ],
+      "basis": "typical monsoon flow 40 m3/s",
+      "placed": [
+        27.2026,
+        92.56532
+      ],
+      "moved_km": 0.0,
+      "river_km2": 929
+    },
+    "Tengapani Bridge_1": {
+      "name": "Tengapani Bridge",
+      "display_cells": 4,
+      "floodable_km2": 0.5,
+      "listed": [
+        27.774,
+        95.975
+      ],
+      "basis": "typical monsoon flow 54 m3/s",
+      "placed": [
+        27.77611,
+        95.97463
+      ],
+      "moved_km": 0.2,
+      "river_km2": 203
+    },
+    "Tissa Camp_1": {
+      "name": "Tissa Camp",
+      "display_cells": 153,
+      "floodable_km2": 4.0,
+      "listed": [
+        26.913,
+        95.365
+      ],
+      "basis": "typical monsoon flow 89 m3/s",
+      "placed": [
+        26.9126,
+        95.36485
+      ],
+      "moved_km": 0.0,
+      "river_km2": 502
+    },
+    "Ziro": {
+      "name": "Ziro",
+      "display_cells": 0,
+      "floodable_km2": 0.0,
+      "listed": [
+        27.63,
+        93.83
+      ],
+      "basis": "typical monsoon flow 2 m3/s",
+      "placed": null,
+      "not_linked": "its published coordinates are wrong; only Ziro town is known, not which stretch of river it measures"
+    }
+  }
+}

@@ -29,9 +29,20 @@ ACCENT_2 = "#4d8dff"
 # after construction.
 CARTO = ('&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> '
          '&copy; <a href="https://carto.com/attributions">CARTO</a>')
+# ⚠️ Dark and Light are Esri's gray canvases, not CARTO's `dark_nolabels` /
+# `light_nolabels`. Those CARTO base tiles started coming back with "API KEY
+# REQUIRED / carto.com/basemaps/apikey" drawn INTO the image (checked
+# 2026-09-25 by downloading the tile itself) — a server-side change on
+# CARTO's end, nothing in this app. Esri's are free, need no key, and carry no
+# watermark. The transparent label overlays below are still CARTO's and still
+# clean; if those ever get watermarked too, Esri's World_Dark_Gray_Reference /
+# World_Light_Gray_Reference are the drop-in replacement.
+ESRI_CANVAS = "Tiles &copy; Esri — Esri, DeLorme, NAVTEQ"
 BASEMAPS = {
-    "Dark": ("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", CARTO),
-    "Light": ("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", CARTO),
+    "Dark": ("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/"
+             "World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", ESRI_CANVAS),
+    "Light": ("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/"
+              "World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", ESRI_CANVAS),
     "Terrain": ("https://tile.opentopomap.org/{z}/{x}/{y}.png",
                 'Map data &copy; OSM, SRTM · style &copy; '
                 '<a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'),
@@ -39,11 +50,17 @@ BASEMAPS = {
                   "MapServer/tile/{z}/{y}/{x}",
                   "Tiles &copy; Esri — Esri, Maxar, Earthstar Geographics"),
 }
+# Place names, drawn over every basemap. Esri's gray-canvas reference layers,
+# not CARTO's `*_only_labels`: those ALSO turned out to carry the "API KEY
+# REQUIRED" watermark, but only from ~zoom 10 in (checked 2026-09-25 at
+# z8 / z11 / z13) — which is why it first looked fixed at state view.
+_ESRI_REF = ("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/"
+             "World_{}_Gray_Reference/MapServer/tile/{{z}}/{{y}}/{{x}}")
 LABEL_TILES = {
-    "Dark": "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
-    "Satellite": "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
-    "Terrain": "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
-    "Light": "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+    "Dark": _ESRI_REF.format("Dark"),
+    "Satellite": _ESRI_REF.format("Dark"),
+    "Terrain": _ESRI_REF.format("Light"),
+    "Light": _ESRI_REF.format("Light"),
 }
 # Boundary and road strokes that read against each basemap.
 BOUNDARY_INK = {"Dark": ACCENT, "Satellite": ACCENT,

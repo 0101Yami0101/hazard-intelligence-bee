@@ -4,7 +4,7 @@
     own climatology -> trigger
 
 SlopeSense asks how unusual the rain is ON a slope. FloodSense asks how much is
-falling ANYWHERE UPSTREAM of a river. Same 97 points, same climatology, same
+falling ANYWHERE UPSTREAM of a river. Same points, same climatology, same
 fetch — and because the fetch is cached here rather than inside either module,
 opening the second one costs no extra API call.
 

@@ -77,7 +77,7 @@ def base_map(grid: Grid, s: MapSettings):
     # created at map setup, and a feature group cannot conjure one later.
     folium.map.CustomPane("labels", z_index=650).add_to(m)
     if s.labels:
-        folium.TileLayer(T.LABEL_TILES[s.basemap], attr=T.CARTO, name="Labels",
+        folium.TileLayer(T.LABEL_TILES[s.basemap], attr=T.ESRI_CANVAS, name="Labels",
                          pane="labels", control=False,
                          min_zoom=T.MAP_MIN_ZOOM, no_wrap=True).add_to(m)
     Fullscreen(position="topleft").add_to(m)
@@ -205,9 +205,9 @@ def day_strip(key: str, days: list[str], fut: list[int],
     ⚠️ `notes` must be a number that MEANS something at the scale it is shown
     next to. This strip used to print the statewide MAXIMUM trigger, which was
     a bug worth spelling out: the trigger is a percentile against each point's
-    own history, so the maximum over 97 points is the maximum of 97 roughly
-    uniform draws. Its expected value is 97/98 = 0.99 on a completely ORDINARY
-    day. It read as "99% chance of a landslide" and in fact carried almost no
+    own history, so the maximum over the (then) 97 points is the maximum of 97
+    roughly uniform draws. Its expected value is 97/98 = 0.99 on a completely
+    ORDINARY day (219/220 with today's 219 points). It read as "99% chance of a landslide" and in fact carried almost no
     information about the weather at all.
 
     Callers must pass something scale-appropriate: the selected location's own
