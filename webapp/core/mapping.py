@@ -77,7 +77,7 @@ def base_map(grid: Grid, s: MapSettings):
     # created at map setup, and a feature group cannot conjure one later.
     folium.map.CustomPane("labels", z_index=650).add_to(m)
     if s.labels:
-        folium.TileLayer(T.LABEL_TILES[s.basemap], attr=T.CARTO, name="Labels",
+        folium.TileLayer(T.LABEL_TILES[s.basemap], attr=T.ESRI_CANVAS, name="Labels",
                          pane="labels", control=False,
                          min_zoom=T.MAP_MIN_ZOOM, no_wrap=True).add_to(m)
     Fullscreen(position="topleft").add_to(m)
