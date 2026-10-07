@@ -1,6 +1,6 @@
 # Putting the app online — free, about 10 minutes
 
-The app is self-contained. It reads a **4.60 MB** bundle in `assets/` and calls a
+The app is self-contained. It reads a **5.33 MB** bundle in `assets/` and calls a
 free weather service. No database, no API key, no paid tier.
 
 ## How the app is laid out
@@ -16,13 +16,13 @@ webapp/
     flood/          FloodSense — live (static layer unvalidated)
     backbone/       Data Backbone — catalogue + pipeline view
   assets/
-    base/           shared geography + the rainfall spine     (2.07 MB)
+    base/           shared geography + the rainfall spine     (2.14 MB)
     landslide/      SlopeSense model output                   (1.59 MB)
-    flood/          FloodSense terrain layers + catchments    (0.78 MB)
+    flood/          FloodSense layers, gauges, daily forecast (1.43 MB)
     backbone/       catalogue, statistics, previews           (0.17 MB)
 ```
 
-`backbone/` summarises **8.06 GB** of licensed source data in 0.17 MB and
+`backbone/` summarises **308 GB** of licensed source data in 0.17 MB and
 deliberately contains none of it: histograms instead of cell values, previews
 at ~6 km per pixel, and synthetic demo rows. See
 `scripts/build/build_backbone_bundle.py` for the rule and how it is enforced.
@@ -140,7 +140,7 @@ streamlit run webapp/app.py
 | Constraint | This app |
 |---|---|
 | Repo size | ~37.7 MB (data excluded) |
-| Bundle the app loads | **4.60 MB** (2.07 shared + 1.59 SlopeSense + 0.78 FloodSense + 0.17 Backbone) |
+| Bundle the app loads | **5.33 MB** (2.14 shared + 1.59 SlopeSense + 1.43 FloodSense + 0.17 Backbone) |
 | Memory | well under 1 GB — a few small arrays |
 | Build time | ~2 min, 5 slim dependencies |
 | API keys | none — Open-Meteo is keyless |

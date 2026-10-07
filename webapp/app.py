@@ -57,9 +57,20 @@ st.markdown(
 # SlopeSense stays a link to SlopeSense — and the browser back button walks
 # between modules the way a visitor expects it to.
 def _open(slug: str | None) -> None:
-    # ⚠️ Nothing here raises the splash. The overlay is already up before this
-    # function runs at all — core/splash.py puts it there in the browser, on
-    # the click itself. See that module for why it cannot be done from Python.
+    """Switch module. Runs as the button's on_click callback — BEFORE the
+    script reruns — never from `if st.button(...)` mid-page.
+
+    ⚠️ That difference is the whole fix for a bug (2026-10-07): called from
+    inside the landing page, this ended with st.rerun(), which stopped the
+    landing page halfway through drawing itself again. Streamlit then
+    sometimes never cleared that half-drawn page, and the landing title sat
+    above the module until a reload (2 of 3 fresh visits in a test). As a
+    callback, the click's own rerun goes straight to the module: no landing
+    page is redrawn, and nothing is left half-done.
+
+    Nothing here raises the splash either. The overlay is already up before
+    this runs — core/splash.py puts it there in the browser, on the click
+    itself. See that module for why it cannot be done from Python."""
     if slug:
         st.session_state.module = slug
         st.query_params["m"] = slug
@@ -71,7 +82,11 @@ def _open(slug: str | None) -> None:
     # day across — those keys mean different things in different modules.
     for k in ("map_target", "day_i", "view"):
         st.session_state.pop(k, None)
-    st.rerun()
+
+
+def _set_page(nav_key: str, label: str) -> None:
+    """A page inside a module, as a callback for the same reason as _open."""
+    st.session_state[nav_key] = label
 
 
 if "module" not in st.session_state and st.query_params.get("m"):
@@ -104,9 +119,9 @@ def _tile(p: P.Product) -> None:
             f"<div class='tile-name'>{p.name}</div>"
             f"<div class='tile-tag'>{p.tagline}</div>"
             "</div>", unsafe_allow_html=True)
-        if st.button("Open" if ready else "Not ready", key=f"go_{p.slug}",
-                     width="stretch", type="primary" if ready else "secondary"):
-            _open(p.slug)
+        st.button("Open" if ready else "Not ready", key=f"go_{p.slug}",
+                  width="stretch", type="primary" if ready else "secondary",
+                  on_click=_open, args=(p.slug,))
 
 
 def _ghost_tile() -> None:
@@ -174,9 +189,8 @@ if product is None:
                         f"{bone.tagline}</div></div></div>",
                         unsafe_allow_html=True)
                 with bc2:
-                    if st.button("Open →", key=f"go_{bone.slug}",
-                                 width="stretch"):
-                        _open(bone.slug)
+                    st.button("Open →", key=f"go_{bone.slug}", width="stretch",
+                              on_click=_open, args=(bone.slug,))
 
     # Take down whichever overlay got this render here — cold_start() above,
     # or arm_home() from inside a module — and restart the entry animation
@@ -219,13 +233,12 @@ with st.sidebar:
             if product.extra_nav:
                 st.divider()
                 for icon, label, disabled_why in product.extra_nav:
-                    if st.button(f"{icon}  {label}", key=f"nav_extra_{label}",
-                                 width="stretch", disabled=bool(disabled_why),
-                                 help=disabled_why or None):
-                        st.session_state[product.nav_key] = label
-                        st.rerun()
-    if st.button("← All modules", key="nav_home", width="stretch"):
-        _open(None)
+                    st.button(f"{icon}  {label}", key=f"nav_extra_{label}",
+                              width="stretch", disabled=bool(disabled_why),
+                              help=disabled_why or None, on_click=_set_page,
+                              args=(product.nav_key, label))
+    st.button("← All modules", key="nav_home", width="stretch",
+              on_click=_open, args=(None,))
     splash.arm_home()
     st.divider()
 

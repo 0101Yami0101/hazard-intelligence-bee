@@ -14,7 +14,8 @@
      "fetched": "2026-07-26",
      "notes": "State + district polygons for Arunachal Pradesh. Defines the AOI clip.",
      "n_files": 3,
-     "bytes": 52424704
+     "bytes": 52424704,
+     "n_fetches": 1
     }
    ]
   },
@@ -32,7 +33,8 @@
      "fetched": "2026-07-26",
      "notes": "28 one-degree COG tiles covering the AOI. 30 m posting, EGM2008 vertical datum.",
      "n_files": 28,
-     "bytes": 1193765481
+     "bytes": 1193765481,
+     "n_fetches": 1
     }
    ]
   },
@@ -50,7 +52,8 @@
      "fetched": "2026-07-26",
      "notes": "250 m soil properties, mean prediction, depths 0-5cm, 15-30cm, 60-100cm. Values are scaled integers \u2014 see ISRIC conversion factors (clay/sand/silt g/kg \u00f710 = %, bdod cg/cm3 \u00f7100, soc dg/kg \u00f710).",
      "n_files": 18,
-     "bytes": 55177779
+     "bytes": 55177779,
+     "n_fetches": 1
     },
     {
      "source": "SMAP SPL3SMP_E.006 (NSIDC DAAC)",
@@ -59,7 +62,8 @@
      "fetched": "2026-07-27",
      "notes": "3 granules sampled via CMR. Global HDF5 at 9 km. Coarse for mountain slopes \u2014 the Appendix flags this as the weakest free substitute for pore pressure, and that stands.",
      "n_files": 3,
-     "bytes": 2018870995
+     "bytes": 2018870995,
+     "n_fetches": 1
     },
     {
      "source": "APSSDI / Arunachal Pradesh Space Application Centre (APSAC)",
@@ -68,7 +72,8 @@
      "fetched": "2026-07-28",
      "notes": "Open WFS, no auth required. Statewide, ~1:50,000. Replaces the 3-class free geology that DATA_VERIFICATION.md marked unusable.",
      "n_files": 1,
-     "bytes": 3437969
+     "bytes": 3437969,
+     "n_fetches": 1
     }
    ]
   },
@@ -86,7 +91,8 @@
      "fetched": "2026-07-26",
      "notes": "10 m global land cover, 11 classes. Class codes: 10 tree, 20 shrub, 30 grass, 40 crop, 50 built, 60 bare, 70 snow/ice, 80 water, 90 herbaceous wetland, 95 mangrove, 100 moss/lichen.",
      "n_files": 6,
-     "bytes": 462930989
+     "bytes": 462930989,
+     "n_fetches": 1
     }
    ]
   },
@@ -104,7 +110,8 @@
      "fetched": "2026-07-26",
      "notes": "15 arc-second base. Rivers carry UPLAND_SKM (upstream drainage area) \u2014 the field that determines which streams a large-river forecast can reach. Basin levels 8 and 12 clipped for catchment-scale work.",
      "n_files": 5,
-     "bytes": 484449061
+     "bytes": 484449061,
+     "n_fetches": 1
     },
     {
      "source": "GloFAS v4 (Copernicus EWDS)",
@@ -113,7 +120,8 @@
      "fetched": "2026-07-27",
      "notes": "0.05 deg (~5.5 km) river discharge. Forecast = operational control run out to 30 days; historical = consolidated reanalysis for calibration. Independent of Google Flood Hub.",
      "n_files": 2,
-     "bytes": 2958765
+     "bytes": 2958765,
+     "n_fetches": 1
     },
     {
      "source": "APSSDI / Arunachal Pradesh Space Application Centre (APSAC)",
@@ -122,7 +130,8 @@
      "fetched": "2026-07-28",
      "notes": "Open WFS, no auth required. Statewide, ~1:50,000. Replaces the 3-class free geology that DATA_VERIFICATION.md marked unusable.",
      "n_files": 1,
-     "bytes": 10856490
+     "bytes": 10856490,
+     "n_fetches": 1
     }
    ]
   },
@@ -140,7 +149,8 @@
      "fetched": "2026-07-26",
      "notes": "GFS subset server-side to the AOI. Lead times 6h, 24h, 72h, 120h, 168h. GRIB2 files are overwritten each run \u2014 this is a live feed, not an archive; historical GFS needs a separate archive source.",
      "n_files": 6,
-     "bytes": 36671
+     "bytes": 36671,
+     "n_fetches": 1
     },
     {
      "source": "GPM IMERG Late Daily V07B (GES DISC)",
@@ -149,7 +159,8 @@
      "fetched": "2026-07-27",
      "notes": "132 daily files, OPeNDAP-subset to the AOI (~11 km, 0.1 deg). Season 2024-06-01..2024-09-30 plus recent days for latency. Units mm/day. Late run has ~1 day latency; Final run (3IMERGDF) is research-grade with ~3 month lag.",
      "n_files": 5,
-     "bytes": 170739
+     "bytes": 170739,
+     "n_fetches": 1
     },
     {
      "source": "ERA5-Land hourly (Copernicus CDS)",
@@ -158,7 +169,8 @@
      "fetched": "2026-07-27",
      "notes": "3-hourly, ~9 km, 2024-06..09. Carries soil water at depth and snowmelt \u2014 variables IMERG and SMAP cannot provide. Precipitation is in metres per hour, not mm.",
      "n_files": 4,
-     "bytes": 16442606
+     "bytes": 16442606,
+     "n_fetches": 1
     },
     {
      "source": "gpm-imerg-archive",
@@ -167,7 +179,8 @@
      "fetched": "2026-07-31",
      "notes": "Daily IMERG late run, 2001-01-01..2001-12-31, subset to Arunachal bbox server-side. 495 files on disk.",
      "n_files": 1,
-     "bytes": 34228
+     "bytes": 34228,
+     "n_fetches": 1
     }
    ]
   },
@@ -185,7 +198,8 @@
      "fetched": "2026-07-26",
      "notes": "Real-time capable APIs, no key. Regional catalogue buffered 2.0 deg because triggering shaking often originates outside the AOI.",
      "n_files": 3,
-     "bytes": 2256644
+     "bytes": 2256644,
+     "n_fetches": 1
     }
    ]
   },
@@ -203,7 +217,8 @@
      "fetched": "2026-07-26",
      "notes": "99 events intersecting the AOI. PROVISIONAL \u2014 official NASA endpoints unreachable at fetch time. Location accuracy is coarse (km-level), so these support validation far better than training.",
      "n_files": 1,
-     "bytes": 109713
+     "bytes": 109713,
+     "n_fetches": 1
     },
     {
      "source": "GSI National Landslide Forecasting Centre \u2014 national landslide inventory",
@@ -212,7 +227,8 @@
      "fetched": "2026-07-28",
      "notes": "1322 landslides in AOI (31,551 nationally). Full attribute schema: district, material, movement type, trigger, runout, casualties. Only 0 carry a date \u2014 spatial inventory, not an event catalogue. Retrieved via the portal's own proxy.ashx; undocumented, availability unguaranteed.",
      "n_files": 1,
-     "bytes": 5120186
+     "bytes": 5120186,
+     "n_fetches": 1
     },
     {
      "source": "GSI National Landslide Forecasting Centre \u2014 mapped landslide polygons",
@@ -221,7 +237,8 @@
      "fetched": "2026-07-28",
      "notes": "26459 mapped landslide extents in AOI, DATA_TYPE='Mapped as polygon'. Attributes: material, movement class, LULC, geomorphology, district, toposheet. True failure geometry \u2014 supersedes point centroids for training. No dates.",
      "n_files": 1,
-     "bytes": 81295769
+     "bytes": 81295769,
+     "n_fetches": 1
     },
     {
      "source": "NRSC Bhuvan landslide inventory (ISRO/NRSC), Arunachal Pradesh",
@@ -230,7 +247,8 @@
      "fetched": "2026-07-29",
      "notes": "11329 landslide polygons across 2014/2017/2023 seasons. Harvested via WMS GetFeatureInfo because WFS is disabled server-side. Polygons carry length/width/height, area, activity state, lithology, LULC and trigger. Coverage is per-season and NOT statewide \u2014 check district coverage before assuming a given area is represented.",
      "n_files": 3,
-     "bytes": 10914666
+     "bytes": 10914666,
+     "n_fetches": 1
     },
     {
      "source": "NRSC Bhuvan aggregated flood inundation 2003-2020 (agg_ar)",
@@ -239,7 +257,8 @@
      "fetched": "2026-07-29",
      "notes": "Binary observed-flood mask derived from a rendered tile service; no per-year or depth information is available through this endpoint.",
      "n_files": 1,
-     "bytes": 77433
+     "bytes": 77433,
+     "n_fetches": 1
     }
    ]
   },
@@ -257,7 +276,8 @@
      "fetched": "2026-07-26",
      "notes": "OSM counts are a coverage test as much as a data pull \u2014 thin mapping in Arunachal directly limits any impact/exposure product.",
      "n_files": 7,
-     "bytes": 877029791
+     "bytes": 877029791,
+     "n_fetches": 1
     },
     {
      "source": "APSSDI / Arunachal Pradesh Space Application Centre (APSAC)",
@@ -266,7 +286,8 @@
      "fetched": "2026-07-28",
      "notes": "Open WFS, no auth required. Statewide, ~1:50,000. Replaces the 3-class free geology that DATA_VERIFICATION.md marked unusable.",
      "n_files": 2,
-     "bytes": 4340767
+     "bytes": 4340767,
+     "n_fetches": 1
     }
    ]
   },
@@ -284,7 +305,8 @@
      "fetched": "2026-07-26",
      "notes": "Coverage test only, 0.5 deg grid, 100% of points returned a unit. Verdict: USABLE \u2014 broad lithology available. Not a production geology layer.",
      "n_files": 1,
-     "bytes": 15796
+     "bytes": 15796,
+     "n_fetches": 1
     },
     {
      "source": "APSSDI / Arunachal Pradesh Space Application Centre (APSAC)",
@@ -293,7 +315,8 @@
      "fetched": "2026-07-28",
      "notes": "Open WFS, no auth required. Statewide, ~1:50,000. Replaces the 3-class free geology that DATA_VERIFICATION.md marked unusable.",
      "n_files": 5,
-     "bytes": 60265006
+     "bytes": 60265006,
+     "n_fetches": 1
     },
     {
      "source": "GSI National Landslide Susceptibility Map (50 m)",
@@ -302,20 +325,99 @@
      "fetched": "2026-07-29",
      "notes": "3-class susceptibility (1 Low / 2 Moderate / 3 High). Benchmark to evaluate our own susceptibility output against, not a training input.",
      "n_files": 1,
-     "bytes": 4370107
+     "bytes": 4370107,
+     "n_fetches": 1
+    }
+   ]
+  },
+  {
+   "key": "11_gauges",
+   "title": "River gauges",
+   "purpose": "Measured river levels and flows \u2014 what a river forecast is trained on and graded against.",
+   "n_files": 43,
+   "bytes": 143355706,
+   "sources": [
+    {
+     "source": "CWC FFS (18 series)",
+     "url": "https://ffs.india-water.gov.in/iam/api/new-entry-data/specification/?stationCode=002Neid3",
+     "license": "open, no login (ffs.india-water.gov.in)",
+     "fetched": "2026-08-31",
+     "notes": "",
+     "n_files": 36,
+     "bytes": 45863346,
+     "n_fetches": 18
+    },
+    {
+     "source": "NWDP river discharge telemetry (NWIC / CWC)",
+     "url": "https://nwdp.nwic.gov.in/datastore/dump/<resource_id>",
+     "license": "other-open (NWDP: hydrological analysis, flood forecasting, water resource management)",
+     "fetched": "2026-08-31",
+     "notes": "Two resources of the dataset river-discharge-telemetry-hourly-central-water-commission-cwc: 9c755c40 (2023 to Sept 2025) and 9a7feb81 (Jan 2026 on). 14 Arunachal stations. scripts/fetch/fetch_24_nwdp_discharge.py. Record written after the fact on 2026-10-07: fetch date is the newest file's modification time; checksums taken then.",
+     "n_files": 2,
+     "bytes": 97462146,
+     "n_fetches": 1
     }
    ]
   },
   {
    "key": "11_satellite",
    "title": "Satellite",
-   "purpose": "Radar imagery, held for change detection work that is not in the shipped models.",
-   "n_files": 1,
-   "bytes": 918489478,
-   "sources": []
+   "purpose": "Radar scenes from flood dates, read by the water test that verifies the flood record.",
+   "n_files": 234,
+   "bytes": 300462777257,
+   "sources": [
+    {
+     "source": "Sentinel-1 GRD radar scenes (Copernicus Data Space)",
+     "url": "https://catalogue.dataspace.copernicus.eu/odata/v1/Products",
+     "license": "Copernicus Sentinel data \u2014 free, full and open access",
+     "fetched": "2026-09-05",
+     "notes": "IW GRDH scenes on and around flood dates, read by the radar water test behind the verified flood record. scripts/fetch/fetch_14_sentinel.py, fetch_22 to 27. Record written after the fact on 2026-10-07: fetch date is the newest file's modification time; checksums taken then.",
+     "n_files": 233,
+     "bytes": 300462731766,
+     "n_fetches": 1
+    }
+   ]
+  },
+  {
+   "key": "15_dfo_flood_records",
+   "title": "Flood records",
+   "purpose": "A global archive of dated large floods \u2014 candidates to verify, not labels.",
+   "n_files": 3,
+   "bytes": 4918829,
+   "sources": [
+    {
+     "source": "DFO Global Flood Records",
+     "url": "https://doi.org/10.5281/zenodo.19288170",
+     "license": "CC0",
+     "fetched": "2026-09-02",
+     "notes": "5,503 dated large flood events worldwide. Downloaded by hand from Zenodo (the Dartmouth Flood Observatory's own archive returns HTTP 410). Record written after the fact on 2026-10-07: fetch date is the newest file's modification time; checksums taken then.",
+     "n_files": 2,
+     "bytes": 4918081,
+     "n_fetches": 1
+    }
+   ]
+  },
+  {
+   "key": "16_groundsource",
+   "title": "Flood reports",
+   "purpose": "News-derived, dated, located flood reports \u2014 candidates to verify.",
+   "n_files": 2,
+   "bytes": 667122967,
+   "sources": [
+    {
+     "source": "Groundsource flood reports (Google)",
+     "url": "https://zenodo.org/records/18647054",
+     "license": "CC-BY-4.0",
+     "fetched": "2026-09-05",
+     "notes": "News-derived, dated, located flood reports. Downloaded by hand from Zenodo. Record written after the fact on 2026-10-07: fetch date is the newest file's modification time; checksums taken then.",
+     "n_files": 1,
+     "bytes": 667122400,
+     "n_fetches": 1
+    }
+   ]
   }
  ],
- "total_files": 10572,
- "total_bytes": 8057436608,
- "n_sources": 24
+ "total_files": 10853,
+ "total_bytes": 308417121889,
+ "n_sources": 29
 }

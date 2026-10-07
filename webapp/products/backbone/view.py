@@ -19,6 +19,8 @@ layer is shared.
 """
 from __future__ import annotations
 
+import json
+from datetime import date
 from html import escape
 
 import numpy as np
@@ -27,7 +29,7 @@ import streamlit as st
 
 import core.theme as T
 import products as P
-from core.bundle import ASSETS, load_rain_spine
+from core.bundle import ASSETS, load_rain_spine, product_dir
 
 VIEWS = [("⛁", "Pipeline"), ("📚", "Data catalogue"), ("🔬", "Layer explorer")]
 
@@ -240,11 +242,38 @@ _ARCH_ICON = {"sources": "⇩", "raw": "▤", "process": "✦", "hub": "▦",
 
 
 def _arch_lanes(cat: dict, pipe: dict, tl: dict, ship_mb: float,
-                n_bundles: int, n_rain_pts: int) -> list[dict]:
-    """The five lanes, with the built nodes' numbers measured off the bundle."""
+                n_bundles: int, n_rain_pts: int, status: dict) -> list[dict]:
+    """The five lanes, with the built nodes' numbers measured off the bundle.
+
+    A node the flood work built is drawn as built ONLY when the bundle
+    measured it (`status`: gauges being read, mornings the daily run
+    completed) — an older bundle, or a checkout without those files, draws
+    it as planned, which is then the truth."""
     grid = pipe.get("grid", {})
     rows = grid.get("rows") or 0
     cols = grid.get("columns") or 0
+    loop, runs = status.get("loop") or {}, status.get("runs") or {}
+    gauges = ([{"n": "Live river gauges", "d": f"{loop['gauges']} gauges · read "
+                                               f"every run", "s": BUILT,
+                "t": "CWC river levels and NWDP river flows, read fresh at every "
+                     "forecast run. What a river forecast starts from, and what "
+                     "it is graded against the day after."}]
+              if loop.get("gauges") else [])
+    daily = ([{"n": "Daily run", "d": f"{runs['n_days_run']} mornings since "
+                                      f"{runs['first']}", "s": BUILT,
+               "t": "Every morning: live rain and river readings in, the flood "
+                    "models run, the forecast written down, yesterday's "
+                    "forecasts graded."},
+              {"n": "Hosted scheduling", "d": "one machine today", "s": PLAN,
+               "t": "The daily run lives on one machine: a morning is missed "
+                    "when it is off or a feed does not answer. The full fetch → "
+                    "build → export refresh is still run by hand."}]
+             if runs.get("n_days_run") else
+             [{"n": "Scheduling", "d": "run by hand today", "s": PLAN,
+               "t": "Fetch → build → export on a schedule, with rainfall "
+                    "incremental. Needed BEFORE any public API: an API serving a "
+                    "hub last refreshed by hand three weeks ago is worse than no "
+                    "API, because the staleness is invisible."}])
     return [
         {"key": "sources", "name": "Sources", "nodes": [
             {"n": "External archives", "d": f"{cat['n_sources']} sources · "
@@ -258,6 +287,7 @@ def _arch_lanes(cat: dict, pipe: dict, tl: dict, ship_mb: float,
                   "rate-limited, keyless, no historical depth of its own. "
                   "The one input that changes every day, which is why this "
                   "is a forecast and not a static map."},
+            *gauges,
             {"n": "Own sensors", "d": "telemetry", "s": PLAN,
              "t": "Continuous instrument feeds — a different ingest path from "
                   "a downloaded archive: drifting, prone to dropout, needing "
@@ -293,14 +323,10 @@ def _arch_lanes(cat: dict, pipe: dict, tl: dict, ship_mb: float,
                   "rainfall is rebuilt daily."},
             {"n": "Model", "d": f"{tl.get('n_days', 0):,} days of rain",
              "s": BUILT,
-             "t": "Where-it-fails fitted on mapped evidence, scored by hiding "
-                  "whole regions; how-unusual-today scored against each "
-                  "place's own history."},
-            {"n": "Scheduling", "d": "run by hand today", "s": PLAN,
-             "t": "Fetch → build → export on a schedule, with rainfall "
-                  "incremental. Needed BEFORE any public API: an API serving a "
-                  "hub last refreshed by hand three weeks ago is worse than no "
-                  "API, because the staleness is invisible."},
+             "t": "Where-it-fails and where-it-floods fitted on verified "
+                  "evidence, scored by hiding whole regions; today's rain and "
+                  "river readings scored against each place's own history."},
+            *daily,
         ]},
         {"key": "hub", "name": "Processed hub", "nodes": [
             {"n": "Analysis-ready", "d": f"{rows/1e6:.1f} M × {cols}",
@@ -339,7 +365,7 @@ def _arch_lanes(cat: dict, pipe: dict, tl: dict, ship_mb: float,
     ]
 
 
-def _arch_diagram(lanes: list[dict]) -> str:
+def _arch_diagram(lanes: list[dict], status: dict | None = None) -> str:
     """Lanes left to right with arrows between them, then the feedback lane.
 
     ⚠️ Name-only, on purpose — no stat line, no hover text. See the note
@@ -370,12 +396,26 @@ def _arch_diagram(lanes: list[dict]) -> str:
     out.append("</div>")
 
     # The return path — the whole reason this is a loop and not a funnel.
-    out.append(
-        "<div class='arch-loop arch-plan'>"
-        "<span class='arch-loop-arrow'>◀</span>"
-        "<span class='arch-loop-name'>Forecast archive → verification → "
-        "outcome log</span>"
-        f"<span class='arch-tag'>{PLAN_TAG}</span></div>")
+    # Built for flood forecasts once the bundle has measured a forecast log
+    # (every river forecast written down before the day, graded after it);
+    # the same loop for landslide forecasts is still to build, and says so.
+    if _loop_built(status):
+        out.append(
+            "<div class='arch-loop' style='border-style:solid'>"
+            "<span class='arch-loop-arrow'>◀</span>"
+            "<span class='arch-loop-name' style='color:var(--txt)'>Forecast "
+            "archive → verification → outcome log</span>"
+            "<span style='font-size:.72rem;color:var(--mut)'>flood forecasts"
+            "</span><span style='font-size:.72rem;color:var(--dim);border:1px "
+            "dashed var(--line);border-radius:999px;padding:1px 9px'>landslide "
+            f"forecasts <span class='arch-tag'>{PLAN_TAG}</span></span></div>")
+    else:
+        out.append(
+            "<div class='arch-loop arch-plan'>"
+            "<span class='arch-loop-arrow'>◀</span>"
+            "<span class='arch-loop-name'>Forecast archive → verification → "
+            "outcome log</span>"
+            f"<span class='arch-tag'>{PLAN_TAG}</span></div>")
     out.append(
         "<div class='arch-legend'>"
         "<span><i class='lg-built'></i>built</span>"
@@ -383,6 +423,101 @@ def _arch_diagram(lanes: list[dict]) -> str:
         "</div>")
     out.append("</div>")
     return "".join(out)
+
+
+def _loop_built(status: dict | None) -> bool:
+    return bool(((status or {}).get("loop") or {}).get("forecasts_logged"))
+
+
+@st.cache_data(show_spinner=False)
+def _live_loop(mtime: float) -> dict:
+    """The forecast loop's numbers straight from today's flood snapshot.
+
+    The daily run refreshes the flood bundle every morning but not this one
+    (rebuilding it reads every raster). So the parts of the status that move
+    daily — the latest issue, forecasts written down and graded, gauges
+    reporting — are read from the flood module's own shipped file when it is
+    there, and from this bundle's build-time copy when it is not. `mtime`
+    is the cache key."""
+    s = json.loads((product_dir("flood") / "live_forecast.json").read_text(encoding="utf-8"))
+    tr = s.get("track_record") or {}
+    return {"issued_on": s.get("issued_on"), "generated_at": s.get("generated_at"),
+            "gauges": len(s.get("rivers", [])),
+            "gauges_offline": sum(1 for r in s.get("rivers", []) if r.get("gauge_offline")),
+            "first_issue": tr.get("first_issue"),
+            "forecasts_logged": tr.get("forecasts_logged"),
+            "forecasts_checked": (tr.get("checked") or {}).get("n_forecasts")}
+
+
+_KEPT = {"static": "computed once", "archive": "fetched once",
+         "daily": "every morning"}
+
+
+def _status_section(status: dict, built: str) -> None:
+    """What the platform holds today, dataset by dataset — counts, spans
+    and dates the builder measured, never a data value."""
+    loop = dict(status.get("loop") or {})
+    snap = product_dir("flood") / "live_forecast.json"
+    live = False
+    if snap.exists():
+        fresh = _live_loop(snap.stat().st_mtime)
+        if (fresh.get("issued_on") or "") >= (loop.get("issued_on") or ""):
+            loop, live = fresh, True
+    runs = status.get("runs") or {}
+    rows = [dict(r) for r in status.get("datasets", [])]
+    for r in rows:      # the one row that moves every morning
+        if r["name"] == "Flood forecast log" and loop.get("forecasts_logged"):
+            r["held"] = f"{loop['forecasts_logged']:,} river forecasts"
+            r["covers"] = f"{loop.get('first_issue', '')} to {loop.get('issued_on', '')}"
+            r["updated"] = loop.get("issued_on", "")
+            r["note"] = f"{loop.get('forecasts_checked') or 0:,} graded against the gauges so far."
+
+    st.markdown("<div class='eyebrow' style='margin-top:26px'>What the platform holds "
+                "today</div>", unsafe_allow_html=True)
+    k = st.columns(4)
+    k[0].metric("Datasets", f"{len(rows)}",
+                f"{sum(1 for r in rows if r['kept'] == 'daily')} move every morning",
+                delta_color="off")
+    if loop.get("issued_on"):
+        age = (date.today() - date.fromisoformat(loop["issued_on"])).days
+        k[1].metric("Latest flood forecast", f"{date.fromisoformat(loop['issued_on']):%d %b}",
+                    "issued today" if age <= 0 else f"{age} day{'s' if age > 1 else ''} ago",
+                    delta_color="off")
+        k[2].metric("Forecasts written down", f"{loop.get('forecasts_logged') or 0:,}",
+                    f"{loop.get('forecasts_checked') or 0:,} graded so far", delta_color="off")
+        k[3].metric("River gauges", f"{loop['gauges'] - loop['gauges_offline']} of "
+                                    f"{loop['gauges']}",
+                    "reporting" if not loop["gauges_offline"] else
+                    f"reporting · {loop['gauges_offline']} offline", delta_color="off")
+
+    st.dataframe(pd.DataFrame([
+        {"Dataset": r["name"], "Held": r["held"], "Covers": r["covers"] or "—",
+         "Last changed": r["updated"] or "—", "Kept up to date": _KEPT.get(r["kept"], r["kept"]),
+         "Note": r.get("note", "")} for r in rows]),
+        width="stretch", hide_index=True, height=35 * len(rows) + 38,
+        column_config={"Dataset": st.column_config.TextColumn(width="medium"),
+                       "Held": st.column_config.TextColumn(width="medium"),
+                       "Note": st.column_config.TextColumn(width="large")})
+    bits = [f"Measured when this page's bundle was built, {built}"
+            + (", except the forecast figures, which are read from the latest "
+               "flood forecast." if live else ".")]
+    if runs.get("n_days_run"):
+        missed = runs.get("missed") or []
+        bits.append(f"The daily run completed on {runs['n_days_run']} mornings from "
+                    f"{date.fromisoformat(runs['first']):%d %b} to "
+                    f"{date.fromisoformat(runs['last']):%d %b}"
+                    + (f"; no completed run on "
+                       f"{', '.join(f'{date.fromisoformat(d):%d %b}' for d in missed)}."
+                       if missed else ", with none missed."))
+    bits.append("“Fetched once” means the archive on disk; river readings and rain "
+                "are also read live at every run.")
+    st.caption(" ".join(bits))
+
+    if status.get("models"):
+        st.markdown("<div class='eyebrow'>Models in use</div>", unsafe_allow_html=True)
+        st.dataframe(pd.DataFrame([
+            {"Model": m["name"], "Last trained": m["trained"], "What it gives": m["what"]}
+            for m in status["models"]]), width="stretch", hide_index=True)
 
 
 def render(shell) -> None:
@@ -403,6 +538,8 @@ def render(shell) -> None:
     # samples the RAW public sources instead. Left in the bundle so the builder
     # need not change; simply never surfaced.
     LAB, PRIV = L["labels"], L["privacy"]
+    # Absent from a bundle built before 2026-10-07: every reader of it copes.
+    STATUS = L.get("status") or {}
 
     if "bb_view" not in st.session_state:
         st.session_state.bb_view = VIEWS[0][1]
@@ -431,10 +568,13 @@ def render(shell) -> None:
 
         ship_mb, n_bundles = _shipped_mb()
         n_rain_pts = len(load_rain_spine()[0]["lat"])
-        lanes = _arch_lanes(CAT, PIPE, TL, ship_mb, n_bundles, n_rain_pts)
-        st.markdown(_arch_diagram(lanes), unsafe_allow_html=True)
+        lanes = _arch_lanes(CAT, PIPE, TL, ship_mb, n_bundles, n_rain_pts, STATUS)
+        st.markdown(_arch_diagram(lanes, STATUS), unsafe_allow_html=True)
 
-        built = sum(1 for ln in lanes for nd in ln["nodes"] if nd["s"] == BUILT)
+        # The loop counts once as built (flood forecasts) when it is; what is
+        # left of it (landslide forecasts) is the "+ 1" among the planned.
+        built = (sum(1 for ln in lanes for nd in ln["nodes"] if nd["s"] == BUILT)
+                 + _loop_built(STATUS))
         plan = sum(1 for ln in lanes for nd in ln["nodes"] if nd["s"] == PLAN)
         ratio = (CAT["total_bytes"] / 1e6 / ship_mb) if ship_mb else 0.0
 
@@ -452,7 +592,10 @@ def render(shell) -> None:
         # ⚠️ Nothing about ONE dataset belongs on this tab. The rainfall
         # archive's depth, span and resolution used to sit here and made the
         # page read as half architecture, half weather — it lives on the Data
-        # catalogue tab now, beside the source it describes.
+        # catalogue tab now, beside the source it describes. What does belong
+        # here is the state of ALL of them at once: one row each.
+        if STATUS.get("datasets"):
+            _status_section(STATUS, L["generated_utc"][:10])
 
     # ═════════════════════ CATALOGUE ═════════════════════════════════════
     elif view == "Data catalogue":
@@ -468,7 +611,15 @@ def render(shell) -> None:
         vol = pd.DataFrame([{"group": g["title"], "GB": round(g["bytes"]/1e9, 2)}
                             for g in CAT["groups"]]).sort_values("GB",
                                                                  ascending=False)
-        _bar(vol, "group", "GB", height=170, sort=False)
+        # One group 30 times the rest put together turns the chart into a
+        # single bar: it is left off and named instead.
+        rest = vol["GB"].sum() - vol["GB"].max()
+        big = vol.iloc[0] if (len(vol) > 1 and vol["GB"].max() > 5 * rest) else None
+        _bar(vol.iloc[1:] if big is not None else vol, "group", "GB", height=170,
+             sort=False)
+        if big is not None:
+            st.caption(f"GB held per group. {big['group']} ({big['GB']:,.0f} GB) is left "
+                       f"off the chart: it would flatten every other bar.")
 
         # One flat table, not eleven expanders — licence terms and links are
         # deliberately left off it, so this is source, group, size and fetch
@@ -490,8 +641,8 @@ def render(shell) -> None:
         # The one source with a TIME dimension worth showing, and the reason
         # the platform can forecast rather than just map. Here beside the
         # sources it belongs to, not on the architecture tab.
-        st.markdown("<div class='eyebrow'>Rainfall archive — depth of the one "
-                    "source that moves daily</div>", unsafe_allow_html=True)
+        st.markdown("<div class='eyebrow'>Rainfall archive — the depth of history "
+                    "a day's rain is scored against</div>", unsafe_allow_html=True)
         yr = pd.DataFrame(TL["by_year"])
         r1, r2, r3, r4 = st.columns(4)
         r1.metric("Days on record", f"{TL['n_days']:,}")
@@ -513,6 +664,17 @@ def render(shell) -> None:
                 f"{LAB['positive_cells']:,} of {LAB['state_cells']:,} cells "
                 f"carry a mapped landslide — a prevalence of "
                 f"{100*LAB['prevalence']:.2f}%.")
+        flood_ev = [r for r in STATUS.get("datasets", [])
+                    if r["name"] in ("Verified flood record", "Flood reports to check",
+                                     "River levels (CWC)", "River flows (NWDP)",
+                                     "Radar scenes (Sentinel-1)")]
+        if flood_ev:
+            st.dataframe(pd.DataFrame([
+                {"Flood evidence": r["name"], "Held": r["held"], "Covers": r["covers"] or "—",
+                 "Note": r.get("note", "")} for r in flood_ev]),
+                width="stretch", hide_index=True)
+            st.caption("A flood counts as evidence only once radar, a satellite flood "
+                       "map or a river gauge confirms it; reports alone are candidates.")
 
     # ═════════════════════ LAYER EXPLORER ════════════════════════════════
     else:

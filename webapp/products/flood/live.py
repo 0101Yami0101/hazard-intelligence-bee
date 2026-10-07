@@ -65,7 +65,7 @@ from products.flood.data import DIR
 from products.flood.ui import (FS_CSS, MAP_H, RIVER_OTHER, RIVER_QUIET, TIERS,
                                _catchment_of, _clean, _dist, _draw_rivers, _esc, _i,
                                _km, _river_segments, _row, _sec, _tile, _tiles,
-                               _upstream, badge, main_row)
+                               _upstream, badge, fullscreen_panel, main_row)
 
 SNAPSHOT = DIR / "live_forecast.json"
 
@@ -726,6 +726,17 @@ def _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot) ->
         st.markdown("<div class='fs-empty'>No flood outlook here — no ground a river flood "
                     "can reach within ~10 km.</div>", unsafe_allow_html=True)
 
+    st.markdown(_tiles(_place_tiles(sel, pl, snap, period, rp, fmeta, own, river_at, levels),
+                       2, grow=True), unsafe_allow_html=True)
+
+
+def _place_tiles(sel, pl, snap, period, rp, fmeta, own, river_at, levels) -> list[str]:
+    """The tiles under a place's headline: this spot if a flood comes, the
+    gauge on its own river, what that gauge reads now, floods on record.
+    One function, because the same tiles show in the box beside the map and
+    in the panel on the full-screen map (`_full_panel`)."""
+    days, nh = snap["days"], snap.get("near_here")
+    _, _, k, w, near = pl
     tiles = []
     # 2. THIS SPOT — if a flood comes nearby (location model). Shown capped
     #    at "20%+": a terrain correction for Arunachal's top ranges was
@@ -771,12 +782,22 @@ def _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot) ->
         else:
             where_ = f"{km:.0f} km {updown}"
         if x:
-            tiles.append(_tile("River gauge", _pct_short(x["p"]),
-                               f"{_esc(r['station_name'])} · {where_}<br>{when}", "forecast",
-                               CHANCE_TEXT[_band(x["p"])],
-                               f"Chance the river at {r['station_name']} reaches {what}. Graded "
-                               "every day against the gauge's real readings. Its graph is "
-                               "below the map.", "left"))
+            # ⚠️ The label says what the number is a chance OF. As "River
+            # gauge" it read as a second flood chance for the same place and
+            # looked like a contradiction (2026-10-07: 2.1% here beside an
+            # outlook of <0.1%). It answers a different question — will the
+            # RIVER reach its line — and where that line is the river's own
+            # wettest 2% of days, about 2% is simply an ordinary day.
+            usual = ("" if r["official"] else
+                     " That line is the river's own wettest 2% of days, so about 2% is an "
+                     "ordinary day, and most days it is reached no flood is recorded.")
+            tiles.append(_tile("River reaches its line", _pct_short(x["p"]),
+                               f"{_esc(r['station_name'])} gauge · {where_}<br>{when}",
+                               "forecast", CHANCE_TEXT[_band(x["p"])],
+                               f"Not the flood chance near here (the headline above): this is "
+                               f"the chance the river at {r['station_name']} reaches {what}."
+                               f"{usual} Graded every day against the gauge's real readings. "
+                               "Its graph is below the map.", "left"))
     elif rp:
         r, _ = min(rp, key=lambda t: _km(sel["lat"], sel["lon"], t[0]["lat"], t[0]["lon"]))
         dkm = _km(sel["lat"], sel["lon"], r["lat"], r["lon"])
@@ -835,7 +856,67 @@ def _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot) ->
                            f"flood days · 10 km · since {_evidence_since(nh)}",
                            "record", "var(--txt)" if n else "var(--dim)",
                            _evidence_line(nh, k), "left" if len(tiles) % 2 else "right"))
-    st.markdown(_tiles(tiles, 2, grow=True), unsafe_allow_html=True)
+    return tiles
+
+
+def _legend_chips(cls: np.ndarray) -> str:
+    """The map's colour key: each level, with its share of the coloured ground."""
+    shown = cls > 0
+    shares = [float((cls[shown] == i).mean()) if shown.any() else 0 for i in range(1, 6)]
+    return "".join(
+        f"<div class='lg'><i style='background:{c}'></i>{w_} <span>{n_}</span>"
+        f"<b>{100*sh:.0f}%</b></div>"
+        for w_, n_, c, sh in zip(CHANCE_WORDS, CHANCE_NAMES, CHANCE_COLORS, shares))
+
+
+def _full_panel(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot, cls,
+                bare: bool) -> str:
+    """What the box beside the map says, as one block of HTML for the panel
+    that shows ON the map when it is full screen — where the page around
+    the map cannot be seen. Same numbers from the same functions as
+    `_place_card`; the areas with the highest outlook are plain rows here
+    (a page button cannot live inside the map), and the colour key rides
+    along because the one under the map is hidden too."""
+    days, nh = snap["days"], snap.get("near_here")
+    if not sel:
+        out = ("<div class='fs-place'>All of Arunachal<small>leave full screen to search; "
+               "click the map to pick a place</small></div>")
+        if nh is not None:
+            vals = list(nh["arunachal_daily"])
+            val = nh["arunachal_week"] if period < 0 else vals[period]
+            out += _hero(val, "somewhere in the state", _when(days, period),
+                         _spark(days, vals, period), more=_error_line(nh))
+        if hot:
+            out += _sec("Highest outlook", badge("outlook", where="right")) + "".join(
+                f"<div class='fsf-row' style='--c:"
+                f"{CHANCE_COLORS[_band(h['p'])] if _band(h['p']) else '#8f99a8'}'>"
+                f"<span>{_esc(h['name'])}</span><b>{_pct_short(h['p'])}</b></div>"
+                for h in hot[:5])
+    else:
+        out = (f"<div class='fs-place'>{_esc(sel['label'])}<small>{sel['lat']:.4f}°N, "
+               f"{sel['lon']:.4f}°E</small></div>")
+        if pl is None:
+            out += ("<div class='fs-empty'><b>Outside the mapped area</b><br>This forecast "
+                    "covers Arunachal Pradesh only.</div>")
+        else:
+            k = pl[2]
+            if nh is not None and k >= 0:
+                vals = [nh["daily"][i][k] for i in range(len(days))]
+                val = nh["week"][k] if period < 0 else vals[period]
+                out += _hero(val, "within ~10 km of here", _when(days, period),
+                             _spark(days, vals, period), more=_error_line(nh))
+            elif nh is None:
+                out += ("<div class='fs-empty'>This snapshot predates the flood-chance "
+                        "numbers.</div>")
+            else:
+                out += ("<div class='fs-empty'>No flood outlook here — no ground a river "
+                        "flood can reach within ~10 km.</div>")
+            out += _tiles(_place_tiles(sel, pl, snap, period, rp, fmeta, own, river_at,
+                                       levels), 2)
+    if not bare:
+        out += (_sec("Colours on the map", badge("outlook", where="right"))
+                + f"<div class='fs-legend' style='margin-top:0'>{_legend_chips(cls)}</div>")
+    return out
 
 
 def _outlook_buttons(days: list[str], vals: list[float] | None, scope: str) -> None:
@@ -1743,6 +1824,11 @@ def render(shell, s, search_row) -> None:
                         _gauge_marker(r, p, r["station_code"] in glabel, when,
                                       (levels.get(r["station_code"]) or {}).get("unit", "")
                                       ).add_to(fg)
+                # On the full-screen map the page around it cannot be seen, so
+                # the place's numbers ride on the map itself (shown only then).
+                fullscreen_panel(f"Flood forecast · {when}", _full_panel(
+                    sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot, cls,
+                    s.bare)).add_to(fg)
 
             # the shared rivers layer stays off: this map draws its own
             fg = M.overlay_group(grid, replace(s, rivers=False), geo, img=img,
@@ -1781,13 +1867,7 @@ def render(shell, s, search_row) -> None:
             if s.bare:
                 M.legend_strip([], [], bare=True)
             else:
-                shown = cls > 0
-                shares = [float((cls[shown] == i).mean()) if shown.any() else 0
-                          for i in range(1, 6)]
-                chips = "".join(
-                    f"<div class='lg'><i style='background:{c}'></i>{w_} <span>{n_}</span>"
-                    f"<b>{100*sh:.0f}%</b></div>"
-                    for w_, n_, c, sh in zip(CHANCE_WORDS, CHANCE_NAMES, CHANCE_COLORS, shares))
+                chips = _legend_chips(cls)
                 sym = (
                     "<span class='fs-sym'><svg width='12' height='12'><rect x='2' y='2' "
                     "width='8' height='8' transform='rotate(45 6 6)' fill='#dbe7f3' "

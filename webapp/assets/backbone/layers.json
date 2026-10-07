@@ -3290,37 +3290,37 @@
   "stages": [
    {
     "name": "Fetch",
-    "scripts": 24,
-    "what": "Pull from source archives \u2014 NASA, Copernicus, ESA, GSI, HydroSHEDS, OpenStreetMap and the state portals.",
-    "out": "10,572 raw files, 8.1 GB",
+    "scripts": 42,
+    "what": "Pull from source archives \u2014 NASA, Copernicus, ESA, GSI, HydroSHEDS, OpenStreetMap, the state portals, and the river gauges of CWC and NWDP.",
+    "out": "10,853 raw files, 308.4 GB",
     "note": "Raw files are never edited in place, and every fetch writes its source, licence and checksum alongside."
    },
    {
     "name": "Align",
-    "scripts": 16,
+    "scripts": 24,
     "what": "Reproject and resample everything onto one 100 m grid over Arunachal.",
     "out": "8,202,343 cells",
     "note": "One lattice, EPSG:32646. Every layer lines up cell for cell, which is what lets two hazards share a map."
    },
    {
     "name": "Feature",
-    "scripts": 16,
+    "scripts": 24,
     "what": "Derive what the models actually read \u2014 slope, curvature, wetness, distances, rainfall percentiles.",
     "out": "34 columns",
     "note": "Terrain and soil are static and computed once; rainfall is rebuilt every day."
    },
    {
     "name": "Model",
-    "scripts": 6,
-    "what": "Fit where-it-fails on mapped evidence; score how unusual today's weather is against each place's own history.",
+    "scripts": 49,
+    "what": "Fit where-it-fails and where-it-floods on verified evidence; score today's weather and river readings against each place's own history.",
     "out": "9,555 days of rainfall history",
     "note": "Validated by hiding whole regions during training, so scores come from ground the model has never seen."
    },
    {
     "name": "Export",
-    "scripts": 2,
+    "scripts": 4,
     "what": "Cut the small web bundles the app actually reads.",
-    "out": "4.6 MB",
+    "out": "5.3 MB",
     "note": "Small enough for a free host \u2014 which is why the live app carries no model files and no geospatial stack."
    }
   ],
@@ -3331,7 +3331,159 @@
    "crs": "EPSG:32646"
   }
  },
- "generated_utc": "2026-08-17T11:10:36",
+ "status": {
+  "datasets": [
+   {
+    "name": "Terrain, soil, geology, land cover",
+    "held": "34 layers \u00b7 100 m grid",
+    "covers": "all of Arunachal",
+    "updated": "2026-09-20",
+    "kept": "static",
+    "note": ""
+   },
+   {
+    "name": "Rainfall archive (IMERG)",
+    "held": "9,555 days \u00b7 ~11 km",
+    "covers": "2000-06-01 to 2026-07-29",
+    "updated": "2026-08-01",
+    "kept": "archive",
+    "note": "The landslide trigger's history."
+   },
+   {
+    "name": "Live-rain history (Open-Meteo)",
+    "held": "219 points \u00b7 6,108 days",
+    "covers": "2010-01-01 to 2026-09-21",
+    "updated": "2026-09-22",
+    "kept": "archive",
+    "note": "The same source the live forecast reads each morning, so a day's rain is scored against its own history."
+   },
+   {
+    "name": "Soil wetness (ERA5-Land)",
+    "held": "1,953 cells \u00b7 9,607 days",
+    "covers": "2000-06-01 to 2026-09-19",
+    "updated": "2026-09-27",
+    "kept": "archive",
+    "note": "Read by the flood forecast on flat ground."
+   },
+   {
+    "name": "River levels (CWC)",
+    "held": "18 gauges \u00b7 1,181,227 readings",
+    "covers": "1971-06-02 to 2026-08-31",
+    "updated": "2026-08-31",
+    "kept": "archive",
+    "note": "The history the river models learned from. New readings are read live at every forecast run."
+   },
+   {
+    "name": "River flows (NWDP)",
+    "held": "14 gauges \u00b7 754,899 readings",
+    "covers": "2023-03-18 to 2026-08-25",
+    "updated": "2026-08-31",
+    "kept": "archive",
+    "note": "The history the river models learned from. New readings are read live at every forecast run; this network publishes about 2 days late. 4 readings carry a much earlier date in the source and are left out of the span."
+   },
+   {
+    "name": "Radar scenes (Sentinel-1)",
+    "held": "233 scenes \u00b7 300 GB",
+    "covers": "2015-08-30 to 2026-08-07",
+    "updated": "2026-09-05",
+    "kept": "archive",
+    "note": "Scenes on and around flood dates."
+   },
+   {
+    "name": "Flood reports to check",
+    "held": "5,503 DFO \u00b7 2,646,302 Groundsource",
+    "covers": "worldwide",
+    "updated": "2026-09-05",
+    "kept": "archive",
+    "note": "Candidates only: a report counts once radar, a satellite flood map or a gauge confirms it."
+   },
+   {
+    "name": "Verified flood record",
+    "held": "2,185 floods",
+    "covers": "2003-07-06 to 2026-07-29",
+    "updated": "2026-09-27",
+    "kept": "archive",
+    "note": "Confirmed by: radar 1,153, gfd 1,016, gauge 71, gauge-xc 59. Rebuilt by hand; what the daily run finds (a gauge crossing its line, a confirmed report) is logged beside it and joins at the next rebuild."
+   },
+   {
+    "name": "Landslide evidence",
+    "held": "37,788 mapped slides",
+    "covers": "4 surveys",
+    "updated": "2026-08-01",
+    "kept": "static",
+    "note": ""
+   },
+   {
+    "name": "River readings logged live",
+    "held": "30 gauges \u00b7 339 daily highs",
+    "covers": "2026-09-20 to 2026-10-05",
+    "updated": "2026-10-06",
+    "kept": "daily",
+    "note": "What the gauges read on each forecast day \u2014 the readings forecasts are graded against."
+   },
+   {
+    "name": "Flood forecast log",
+    "held": "3,136 river forecasts",
+    "covers": "2026-09-21 to 2026-10-06",
+    "updated": "2026-10-06",
+    "kept": "daily",
+    "note": "1,564 graded against the gauges so far."
+   }
+  ],
+  "loop": {
+   "issued_on": "2026-10-06",
+   "generated_at": "2026-10-06 12:23",
+   "gauges": 32,
+   "gauges_offline": 3,
+   "first_issue": "2026-09-21",
+   "forecasts_logged": 3136,
+   "forecasts_checked": 1564,
+   "outlook_issues_logged": 7,
+   "outlook_issues_graded": 0
+  },
+  "runs": {
+   "first": "2026-09-22",
+   "last": "2026-10-06",
+   "n_days_run": 13,
+   "missed": [
+    "2026-10-01",
+    "2026-10-03"
+   ]
+  },
+  "models": [
+   {
+    "name": "Landslide \u2014 where",
+    "trained": "2026-08-01",
+    "what": "Where slopes fail, from mapped landslides."
+   },
+   {
+    "name": "Landslide \u2014 when",
+    "trained": "2026-08-01",
+    "what": "How unusual today's rain is for each place."
+   },
+   {
+    "name": "Flood \u2014 when",
+    "trained": "2026-09-29",
+    "what": "The chance of a flood near a place on a day."
+   },
+   {
+    "name": "Flood \u2014 where",
+    "trained": "2026-09-21",
+    "what": "Where water goes if a flood comes."
+   },
+   {
+    "name": "River \u2014 chance of reaching its line",
+    "trained": "2026-10-06",
+    "what": "One model per day ahead, 9 days, 32 gauges."
+   },
+   {
+    "name": "River \u2014 level",
+    "trained": "2026-10-06",
+    "what": "The river's daily high; drawn 2 days ahead."
+   }
+  ]
+ },
+ "generated_utc": "2026-10-07T02:27:13",
  "privacy": {
   "rule": "No source dataset can be reconstructed from this bundle.",
   "histograms": "28 bins per layer \u2014 shape only, no cell values",

@@ -13,11 +13,14 @@ number it is (forecast, outlook, estimate, measured, input, record).
 from __future__ import annotations
 
 import html
+import json
 import re
 
 import folium
 import numpy as np
 import streamlit as st
+from branca.element import MacroElement
+from jinja2 import Template
 
 import core.geo as G
 
@@ -371,28 +374,43 @@ def _river_segments(key: tuple, _rivers: dict, _grid, _chan: np.ndarray, _gauge)
 
 
 def _draw_rivers(fg, segs, reach: dict, own_g: int) -> None:
-    """Quiet blue rivers, then each gauged stretch glowing in its gauge's
-    colour. `reach` = {gauge index: (colour, tooltip)}."""
-    plain, gauged = [], []
+    """Quiet blue rivers, then each gauged stretch in its gauge's colour over
+    a soft halo. `reach` = {gauge index: (colour, tooltip)}.
+
+    Pieces of the same river size (and the same gauge) are drawn as ONE
+    line each. Drawn piece by piece, every join between two half-clear
+    pieces doubled up into a bead, and the gauged stretches' halos piled
+    into blobs at the starting zoom (2026-10-07). Widths and halo are kept
+    modest for the same reason: a line's width is in screen pixels, so what
+    reads well zoomed in is a band across a valley zoomed out."""
+    plain, gauged = {}, {}
     for coords, w, g in segs:
-        geom = {"type": "LineString", "coordinates": coords}
         if g >= 0 and g in reach:
-            col, tip = reach[g]
-            gauged.append({"type": "Feature", "geometry": geom, "properties": {
-                "w": w + (1.8 if g == own_g else 0.7), "c": col, "t": tip}})
+            gauged.setdefault((g, w), []).append(coords)
         else:
-            plain.append({"type": "Feature", "geometry": geom, "properties": {"w": w}})
+            plain.setdefault(w, []).append(coords)
+
+    def feature(lines, **props):
+        return {"type": "Feature", "properties": props,
+                "geometry": {"type": "MultiLineString", "coordinates": lines}}
+
     if plain:
-        folium.GeoJson({"type": "FeatureCollection", "features": plain}, name="Rivers",
+        fc = {"type": "FeatureCollection",
+              "features": [feature(v, w=w) for w, v in sorted(plain.items())]}
+        folium.GeoJson(fc, name="Rivers", smooth_factor=1.5,
                        style_function=lambda f: {"color": RIVER_OTHER, "opacity": .85,
                                                  "weight": f["properties"]["w"]}).add_to(fg)
     if gauged:
-        fc = {"type": "FeatureCollection", "features": gauged}
-        folium.GeoJson(fc, name="Gauged glow",
-                       style_function=lambda f: {"color": f["properties"]["c"], "opacity": .2,
-                                                 "weight": f["properties"]["w"] + 4}).add_to(fg)
-        folium.GeoJson(fc, name="Gauged rivers",
-                       style_function=lambda f: {"color": f["properties"]["c"], "opacity": .96,
+        # the place's own gauge last, so its stretch sits on top
+        keys = sorted(gauged, key=lambda k: (k[0] == own_g, k[1]))
+        fc = {"type": "FeatureCollection", "features": [
+            feature(gauged[(g, w)], w=w + (1.4 if g == own_g else 0.4), c=reach[g][0],
+                    t=reach[g][1]) for g, w in keys]}
+        folium.GeoJson(fc, name="Gauged glow", smooth_factor=1.5,
+                       style_function=lambda f: {"color": f["properties"]["c"], "opacity": .16,
+                                                 "weight": f["properties"]["w"] + 3}).add_to(fg)
+        folium.GeoJson(fc, name="Gauged rivers", smooth_factor=1.5,
+                       style_function=lambda f: {"color": f["properties"]["c"], "opacity": .92,
                                                  "weight": f["properties"]["w"]},
                        tooltip=folium.GeoJsonTooltip(["t"], labels=False)).add_to(fg)
 
@@ -519,6 +537,126 @@ def plain_rivers(fg, geo, grid) -> None:
     segs = _river_segments((len(geo.rivers.get("features", [])), "plain"),
                            geo.rivers, grid, load_static()[3], None)
     _draw_rivers(fg, segs, {}, -1)
+
+
+# ── the panel on the full-screen map ─────────────────────────────────────────
+# Full screen shows the map and nothing else: the browser draws only the map's
+# own box, so the page's panels cannot be seen however they are styled. What
+# must stay readable therefore has to live INSIDE the map. This is a box put
+# into the map's own element, hidden until the map is full screen.
+_FULL_CSS = """
+#fs-full-panel{--ink:#0b0f14;--panel:#111823;--panel-2:#161f2c;--line:#223044;
+  --txt:#e5edf5;--mut:#8fa3ba;--dim:#64798f;--accent:#2ee6d6;--accent-2:#4d8dff;
+  display:none;position:absolute;top:10px;right:10px;z-index:800;width:336px;
+  max-width:calc(100% - 70px);max-height:calc(100% - 46px);overflow-y:auto;
+  background:rgba(11,15,20,.94);border:1px solid var(--line);border-radius:16px;
+  padding:10px 12px 12px;color:var(--txt);font:14px/1.45 Inter,system-ui,sans-serif;
+  box-shadow:0 14px 44px rgba(0,0,0,.6);cursor:default;text-align:left;}
+#fs-full-panel,#fs-full-panel *{box-sizing:border-box;}
+/* one rule each: a browser that does not know a selector drops only that
+   rule. Real full screen puts no class on the map; the fallback for
+   browsers without it (leaflet.fullscreen) does. */
+.leaflet-container:fullscreen #fs-full-panel{display:block;}
+.leaflet-container:-webkit-full-screen #fs-full-panel{display:block;}
+.leaflet-pseudo-fullscreen #fs-full-panel{display:block;}
+#fs-full-panel .fsf-bar{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+#fs-full-panel .fsf-t{flex:1;font:700 .64rem Inter,sans-serif;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;}
+#fs-full-panel .fsf-x{font:600 .72rem Inter,sans-serif;color:var(--txt);cursor:pointer;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
+  padding:2px 11px;line-height:1.5;}
+#fs-full-panel .fsf-x:hover{border-color:var(--accent);color:var(--accent);}
+#fs-full-panel.min{width:auto;}
+#fs-full-panel.min .fsf-body{display:none;}
+#fs-full-panel.min .fsf-bar{margin-bottom:0;}
+#fs-full-panel .fsf-row{display:flex;justify-content:space-between;gap:10px;
+  padding:6px 11px;margin-bottom:6px;font-size:.82rem;border-radius:9px;
+  background:var(--panel-2);border:1px solid var(--line);border-left:4px solid var(--c);}
+#fs-full-panel .fsf-row b{font-variant-numeric:tabular-nums;}
+#fs-full-panel .fs-sec{margin:10px 0 7px;}
+#fs-full-panel .fs-tiles{margin-bottom:2px;}
+#fs-full-panel .lg{display:inline-flex;align-items:center;gap:6px;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:.72rem;
+  color:#c3d3e3;white-space:nowrap;}
+#fs-full-panel .lg i{width:10px;height:10px;border-radius:3px;flex:none;}
+#fs-full-panel .lg b{color:var(--dim);font-weight:600;}
+/* the page's hover bubbles would be cut off by the panel's edge: the same
+   words show as the browser's own tooltip instead (set in the script) */
+#fs-full-panel .fs-tip:hover::after{display:none;}
+"""
+
+_FULL_FONTS = ("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700"
+               "&family=Sora:wght@500;600;700&display=swap")
+
+# The script runs where the map's own overlays do (streamlit-folium evaluates
+# the overlay group's script inside the map's frame, where the map is
+# `map_div`), each time the overlays change — so the panel is replaced, by
+# id, with the place and day now shown. Everything is inside try/catch: a
+# fault here must never stop the rivers and gauges that follow it.
+_FULL_TEMPLATE = Template("""
+{% macro script(this, kwargs) %}
+(function () {
+  try {
+    var box = map_div.getContainer(), doc = box.ownerDocument;
+    if (!doc.getElementById('fs-full-style')) {
+      var st = doc.createElement('style');
+      st.id = 'fs-full-style';
+      st.textContent = {{ this.css }};
+      doc.head.appendChild(st);
+      var ln = doc.createElement('link');
+      ln.rel = 'stylesheet';
+      ln.href = {{ this.fonts }};
+      doc.head.appendChild(ln);
+    }
+    var old = doc.getElementById('fs-full-panel');
+    if (old) old.remove();
+    var p = doc.createElement('div');
+    p.id = 'fs-full-panel';
+    if (window.fsFullMin) p.className = 'min';
+    p.innerHTML = {{ this.html }};
+    var tips = p.querySelectorAll('[data-tip]');
+    for (var i = 0; i < tips.length; i++) tips[i].title = tips[i].getAttribute('data-tip');
+    var btn = p.querySelector('.fsf-x');
+    var label = function () { btn.textContent = window.fsFullMin ? 'Show' : 'Hide'; };
+    label();
+    btn.addEventListener('click', function () {
+      window.fsFullMin = !window.fsFullMin;
+      p.className = window.fsFullMin ? 'min' : '';
+      label();
+    });
+    box.appendChild(p);
+    // clicks, drags and the wheel on the panel are the panel's, not the map's
+    L.DomEvent.disableClickPropagation(p);
+    L.DomEvent.disableScrollPropagation(p);
+  } catch (err) {
+    if (window.console) console.warn('full-screen panel:', err);
+  }
+})();
+{% endmacro %}
+""")
+
+
+class _FullPanel(MacroElement):
+    _template = _FULL_TEMPLATE
+
+    def __init__(self, title: str, body: str):
+        super().__init__()
+        self._name = "FullPanel"
+        css = FS_CSS.replace("<style>", "").replace("</style>", "") + _FULL_CSS
+        self.css = json.dumps(css)
+        self.fonts = json.dumps(_FULL_FONTS)
+        self.html = json.dumps(
+            f"<div class='fsf-bar'><span class='fsf-t'>{_esc(title)}</span>"
+            "<button type='button' class='fsf-x' title='Hide or show this panel'>Hide</button>"
+            f"</div><div class='fsf-body'>{body}</div>")
+
+
+def fullscreen_panel(title: str, body: str) -> MacroElement:
+    """A panel that shows on the map only while the map is full screen —
+    add it to the map's overlay group. `body` is page HTML (the same tiles
+    and headline the page shows beside the map)."""
+    return _FullPanel(title, body)
 
 
 def sym(kind: str, label: str, color: str = RIVER_OTHER) -> str:
