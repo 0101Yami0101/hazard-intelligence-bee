@@ -215,7 +215,9 @@ def day_strip(key: str, days: list[str], fut: list[int],
     """
     if "day_i" not in st.session_state or st.session_state.day_i not in fut:
         st.session_state.day_i = fut[0]
-    cols = st.columns(len(fut))
+    # keyed so the stylesheet can keep the days four to a row on a phone,
+    # where Streamlit would otherwise stack them seven rows deep (theme.py)
+    cols = st.container(key=f"daystrip_{key}").columns(len(fut))
     for n, (col, i) in enumerate(zip(cols, fut)):
         d = datetime.fromisoformat(days[i])
         with col:

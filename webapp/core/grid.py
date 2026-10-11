@@ -128,22 +128,35 @@ def feature_by(features: list[dict], key: str, name: str):
     return None
 
 
-@st.cache_data(show_spinner=False)
-def polygon_mask(_geometry: dict, west, east, south, north, height, width) -> np.ndarray:
-    """Cells inside one polygon, as a boolean grid.
+def district_raster(grid: Grid, districts: dict) -> tuple[np.ndarray, list[str]]:
+    """Which district each cell is in: (ids, names), ids 1-based into names
+    and 0 outside every district.
 
-    ⚠️ The real polygon, not a bounding box. Arunachal's districts interlock
-    along river valleys, so a box around Upper Siang contains large parts of
-    three neighbours — clipping to it would show a visitor another district's
-    forecast under their own district's name.
+    The real outlines, drawn once. Two things read it — a district's figures
+    and the clip that shows one district alone — so they cannot disagree, and
+    the daily landslide log (scripts/model/landslide_forecast_log.py) reads
+    the same function so the log is the screen.
 
-    The leading underscore keeps Streamlit from hashing the geometry (a nested
-    dict of thousands of coordinates); the bounds that follow are the real
-    cache key, and they are what actually determines the output.
+    ⚠️ It replaced two things that were both wrong (2026-10-10). District
+    figures were taken over each district's bounding BOX, which holds large
+    parts of its neighbours (Upper Siang: 51,317 cells in its box, 25,928 in
+    its outline). And the clip came from a cached polygon_mask() here whose
+    cache key left the outline itself out, so it could not tell one district
+    from the next — every district picked after the first was shown through
+    the first one's outline. That function is gone.
+
+    A cell on a shared border goes to the district listed first (39 cells).
+    Not cached here: this module's maths stays testable without Streamlit;
+    the page caches it.
     """
-    lon = west + (np.arange(width) + 0.5) * (east - west) / width
-    lat = north - (np.arange(height) + 0.5) * (north - south) / height
-    return G.rasterize_polygon(_geometry, lon, lat)
+    lon, lat = grid.axes()
+    ids = np.zeros(grid.shape, dtype=np.uint8)
+    names: list[str] = []
+    for f in districts.get("features", []):
+        m = G.rasterize_polygon(f["geometry"], lon, lat)
+        names.append(f["properties"].get("district", "—"))
+        ids[m & (ids == 0)] = len(names)
+    return ids, names
 
 
 def disc_mask(grid: Grid, lats, lons, half_km: float) -> np.ndarray:

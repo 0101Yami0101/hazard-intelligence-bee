@@ -13,7 +13,7 @@ pillow>=10.0
 requests>=2.31
 # >=1.45 for st.selectbox(accept_new_options=…) — that is what lets the search
 # box take a raw latitude/longitude, not just a name from the gazetteer.
-streamlit>=1.45
+streamlit>=1.60      # download_button built on click (the forecast report)
 folium>=0.17
 streamlit-folium>=0.24   # pixelated=True — nearest-neighbour overlay
                          # rendering, so the ~0.55 km cells keep hard

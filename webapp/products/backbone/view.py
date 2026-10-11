@@ -646,7 +646,10 @@ def render(shell) -> None:
         yr = pd.DataFrame(TL["by_year"])
         r1, r2, r3, r4 = st.columns(4)
         r1.metric("Days on record", f"{TL['n_days']:,}")
-        r2.metric("Span", f"{len(yr)} yr", f"{TL['first'][:4]}–{TL['last'][:4]}")
+        # Whole years of data, not calendar years touched: the first and last
+        # are part-years, so counting bars read 27 for 26 years of rain.
+        r2.metric("Span", f"{int(TL['n_days'] / 365.25)} yr",
+                  f"{TL['first'][:4]}–{TL['last'][:4]}")
         r3.metric("Resolution", f"~{TL['cell_km']} km")
         r4.metric("Missing", f"{100*(TL.get('nan_frac') or 0):.0f}%")
         _bar(yr, "year", "days", height=170, color=T.ACCENT_2, sort=False)

@@ -35,5 +35,16 @@ def load_model():
     return sus, near, quant, pts, met, inv
 
 
+@st.cache_data(show_spinner=False)
+def load_times_usual() -> dict | None:
+    """The measured "times the usual" figures behind the place card
+    (scripts/model/check_landslide_times_usual.py): for each level, each band
+    of the rain score and each class of ground, how many times as common
+    landslides have been. None if the file is not in the bundle — the card
+    then shows the level's word alone, never a made-up number."""
+    p = DIR / "times_usual.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
 # load_forecast now lives in core.rainfall — one cached fetch serves every
 # module, so opening FloodSense after SlopeSense costs no extra API call.

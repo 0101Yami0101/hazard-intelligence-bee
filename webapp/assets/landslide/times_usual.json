@@ -1,0 +1,159 @@
+{
+ "what": "how many times as common dated landslides were, by how unusual the rain was (the app's rain score), against a usual day at the same place",
+ "landslides": 84,
+ "source": "NASA Global Landslide Catalog, dated, inside Arunachal",
+ "usual_day": "every day of the year at the point",
+ "rain_bands": [
+  {
+   "from": 0.0,
+   "to": 0.5,
+   "landslides": 13,
+   "share_of_days": 0.6816,
+   "share_of_landslides": 0.1548,
+   "times_usual": 0.227,
+   "range_90": [
+    0.14,
+    0.332
+   ],
+   "monsoon_only_times_usual": 0.257
+  },
+  {
+   "from": 0.5,
+   "to": 0.75,
+   "landslides": 19,
+   "share_of_days": 0.1797,
+   "share_of_landslides": 0.2262,
+   "times_usual": 1.258,
+   "range_90": [
+    0.861,
+    1.722
+   ],
+   "monsoon_only_times_usual": 0.828
+  },
+  {
+   "from": 0.75,
+   "to": 0.9,
+   "landslides": 20,
+   "share_of_days": 0.0888,
+   "share_of_landslides": 0.2381,
+   "times_usual": 2.683,
+   "range_90": [
+    1.878,
+    3.622
+   ],
+   "monsoon_only_times_usual": 1.515
+  },
+  {
+   "from": 0.9,
+   "to": 0.95,
+   "landslides": 13,
+   "share_of_days": 0.0253,
+   "share_of_landslides": 0.1548,
+   "times_usual": 6.129,
+   "range_90": [
+    3.772,
+    8.486
+   ],
+   "monsoon_only_times_usual": 3.876
+  },
+  {
+   "from": 0.95,
+   "to": 1.0,
+   "landslides": 19,
+   "share_of_days": 0.0247,
+   "share_of_landslides": 0.2262,
+   "times_usual": 9.166,
+   "range_90": [
+    6.271,
+    12.06
+   ],
+   "monsoon_only_times_usual": 6.026
+  }
+ ],
+ "ground": [
+  {
+   "level": "Very Low",
+   "times_average_ground": 0.02,
+   "share_of_land": 0.5,
+   "share_of_mapped_landslides": 0.011
+  },
+  {
+   "level": "Low",
+   "times_average_ground": 0.29,
+   "share_of_land": 0.25,
+   "share_of_mapped_landslides": 0.072
+  },
+  {
+   "level": "Moderate",
+   "times_average_ground": 1.38,
+   "share_of_land": 0.15,
+   "share_of_mapped_landslides": 0.206
+  },
+  {
+   "level": "High",
+   "times_average_ground": 4.4,
+   "share_of_land": 0.07,
+   "share_of_mapped_landslides": 0.308
+  },
+  {
+   "level": "Very High",
+   "times_average_ground": 13.43,
+   "share_of_land": 0.03,
+   "share_of_mapped_landslides": 0.403
+  }
+ ],
+ "combined_shown": true,
+ "levels": [
+  {
+   "level": "Very Low",
+   "landslides": 7,
+   "share_of_place_days": 0.5935,
+   "times_usual": 0.22,
+   "range_90": [
+    0.09,
+    0.34
+   ]
+  },
+  {
+   "level": "Low",
+   "landslides": 12,
+   "share_of_place_days": 0.201,
+   "times_usual": 1.11,
+   "range_90": [
+    0.64,
+    1.57
+   ]
+  },
+  {
+   "level": "Moderate",
+   "landslides": 13,
+   "share_of_place_days": 0.1258,
+   "times_usual": 1.91,
+   "range_90": [
+    1.18,
+    2.65
+   ]
+  },
+  {
+   "level": "High",
+   "landslides": 8,
+   "share_of_place_days": 0.0542,
+   "times_usual": 2.73,
+   "range_90": [
+    1.37,
+    4.44
+   ]
+  },
+  {
+   "level": "Very High",
+   "landslides": 14,
+   "share_of_place_days": 0.0255,
+   "times_usual": 10.16,
+   "range_90": [
+    6.53,
+    13.79
+   ]
+  }
+ ],
+ "levels_usual": "an average scored place on an average day"
+}

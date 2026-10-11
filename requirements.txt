@@ -9,6 +9,7 @@ numpy>=1.26
 pandas>=2.1
 pillow>=10.0
 requests>=2.31
-streamlit>=1.45      # accept_new_options on selectbox; keyed st.container
+streamlit>=1.60      # accept_new_options on selectbox; keyed st.container;
+                     # download_button built on click (the forecast report)
 folium>=0.17
 streamlit-folium>=0.24

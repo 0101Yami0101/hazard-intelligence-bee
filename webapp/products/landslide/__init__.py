@@ -1,7 +1,7 @@
 """SlopeSense — the landslide module.
 
     hazard = susceptibility (where, 100 m, static)
-           x trigger        (when, ~33 km, daily)
+           x trigger        (when, ~22 km, daily)
 
 The product is the FORECAST, and a forecast is only useful somewhere. So the
 Forecast page is built around ONE location: anything the visitor searches for,

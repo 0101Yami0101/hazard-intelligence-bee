@@ -1,4 +1,5 @@
-"""FloodSense's shared look — the pieces every FloodSense page is built from.
+"""The shared dashboard look — the pieces every FloodSense page, and since
+2026-10-10 every SlopeSense page, is built from.
 
 Split out of live.py on 2026-09-29, when the Flood-prone ground and
 Catchments pages were made over in the forecast page's dashboard style
@@ -9,6 +10,10 @@ three pages read as one product.
 Design rules they share: minimum text on screen, every explanation behind an
 ⓘ or a badge's hover, and every number wearing the badge of what KIND of
 number it is (forecast, outlook, estimate, measured, input, record).
+
+It still lives in the flood folder because that is where it was written;
+nothing in it is about floods except the wording of TIERS and the river
+layer. SlopeSense's kinds of number are SLOPE_TIERS below.
 """
 from __future__ import annotations
 
@@ -54,6 +59,26 @@ TIERS = {
                "gauge crossing its line). History, not a forecast."),
 }
 
+# SlopeSense's kinds of number. Same glyphs, colours and borders as the flood
+# ones they sit beside in the same app, so a badge means the same kind of
+# thing in both modules — but its own words: a landslide level is a rank,
+# and nothing on that screen is a chance.
+SLOPE_TIERS = {
+    "sl_outlook": ("≈", "Outlook", "#c4a7ff", "dashed",
+                   "Landslide outlook: how weak the slope is, times how unusual the rain is "
+                   "there, shown as one of five levels. A level ranks places and days — where "
+                   "to look first. It is not a chance of a landslide."),
+    "sl_ground": ("◆", "Ground", "#2bb3ad", "solid",
+                  "Slope susceptibility: how prone a slope is to fail, from terrain, soil, rock "
+                  "and land cover, learned from mapped landslides. No rain in it — the same "
+                  "every day."),
+    "sl_input": ("☂", "Input", "#7fd4f0", "dotted",
+                 "Input: the rain that feeds the outlook. Not a landslide level."),
+    "sl_record": ("◷", "Record", "#e0c080", "solid",
+                  "Record: landslides mapped in the past by GSI, NRSC Bhuvan and APSAC. "
+                  "History, not a forecast."),
+}
+
 
 FS_CSS = """
 <style>
@@ -87,6 +112,17 @@ FS_CSS = """
   margin-top:3px;flex-wrap:wrap;}
 .fs-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none;
   box-shadow:0 0 0 3px color-mix(in srgb,currentColor 0%,transparent);}
+/* The header when its own box is narrow — a phone, or a tablet with the menu
+   open (470 px of page, where Streamlit still lays columns side by side and
+   the search row ran off the right edge, 2026-10-10): title on its own line,
+   the search box on the next, its buttons two to a row under it. */
+.st-key-fs_head{container-type:inline-size;container-name:fshead;}
+@container fshead (max-width:640px){
+  .st-key-fs_head [data-testid="stHorizontalBlock"]{flex-wrap:wrap!important;}
+  .st-key-fs_head [data-testid="stColumn"]{flex:1 1 100%!important;min-width:100%!important;width:auto!important;}
+  .st-key-fs_head [data-testid="stColumn"] [data-testid="stColumn"]{flex:1 1 40%!important;min-width:40%!important;}
+  .st-key-fs_head [data-testid="stColumn"] [data-testid="stColumn"]:first-child{flex:1 1 100%!important;min-width:100%!important;}
+}
 .fs-key{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:2px 0 12px;}
 .fs-key-l{font-size:.6rem;font-weight:700;letter-spacing:.16em;color:var(--dim);
   text-transform:uppercase;margin-right:3px;}
@@ -158,10 +194,15 @@ FS_CSS = """
   font:700 .76rem Inter,sans-serif;background:var(--c);color:var(--k);
   font-variant-numeric:tabular-nums;}
 /* ---- rivers list (conditions) ---- */
+/* the gauge graph's two halves sit close, as one graph */
+.st-key-fs_gchart{gap:.3rem!important;}
 .fs-rhead,.fs-rrow{display:grid;grid-template-columns:minmax(0,1fr) 104px 58px;align-items:center;
   gap:8px;}
 .fs-rhead{padding:0 0 5px;border-bottom:1px solid var(--line);}
 .fs-rhead .fs-sec-t{white-space:nowrap;letter-spacing:.06em;font-size:.6rem;}
+/* the last heading is wider than its 58 px column: it ends at the column's edge and
+   runs left into the spare room of the one before, never past the panel (seen on a phone) */
+.fs-rhead .fs-sec-t:last-child{justify-self:end;}
 .fs-rrow{padding:6px 0;border-bottom:1px solid rgba(34,48,68,.55);}
 .fs-rrow.own{background:rgba(77,141,255,.09);border-radius:9px;padding:6px 6px;margin:0 -6px;}
 .fs-rname{font-size:.8rem;color:var(--txt);white-space:nowrap;overflow:hidden;
@@ -186,13 +227,13 @@ FS_CSS = """
 .fs-sym{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--mut);
   margin-right:10px;white-space:nowrap;}
 /* ---- 7-day outlook buttons ---- */
-:is([class*="st-key-flv_d"],[class*="st-key-flc_d"]) button{padding:6px 2px!important;min-height:0!important;
+:is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button{padding:6px 2px!important;min-height:0!important;
   line-height:1.2!important;border-radius:11px!important;}
-:is([class*="st-key-flv_d"],[class*="st-key-flc_d"]) button p{font-size:.7rem!important;}
-:is([class*="st-key-flv_d"],[class*="st-key-flc_d"]) button strong{font:700 1.02rem Sora,sans-serif!important;}
+:is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button p{font-size:.7rem!important;}
+:is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button strong{font:700 1.02rem Sora,sans-serif!important;}
 [class*="st-key-fs_hot_"] button{justify-content:flex-start!important;text-align:left!important;
   padding:6px 12px!important;}
-:is([class*="st-key-flv_d"],[class*="st-key-flc_d"]) button p,:is([class*="st-key-flv_d"],[class*="st-key-flc_d"]) button strong{white-space:nowrap;}
+:is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button p,:is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button strong{white-space:nowrap;}
 .st-key-fs_head button p{white-space:nowrap;}
 /* ---- the main row: place | map | side panel ----
    Side by side while each has room (1,304 px of page), all three ending on
@@ -250,7 +291,20 @@ FS_CSS = """
 @container fsmain (max-width:760px){
   [data-testid="stColumn"]:has(.st-key-fs_col_l),[data-testid="stColumn"]:has(.st-key-fs_col_m),[data-testid="stColumn"]:has(.st-key-fs_col_r){flex:1 1 100%!important;min-width:0;}
   .st-key-fs_col_r:has(.st-key-fs_r_c){display:flex;}
-  .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]{flex:1 1 100%;}
+  /* a phone: the day buttons four to a row, not eight rows down the page */
+  .st-key-fs_r_a{flex-direction:row;flex-wrap:wrap;}
+  .st-key-fs_r_a > [data-testid="stElementContainer"]{flex:1 1 100%;}
+  /* ⚠️ Each ROW of buttons is one block of four columns. The row keeps the
+     full width and its four columns stay side by side — Streamlit would
+     stack them under 640 px. (Until 2026-10-10 the rows themselves were set
+     side by side, which gave two columns that read downwards: Today, Sun,
+     Mon, Tue beside Wed, Thu, Fri.) */
+  .st-key-fs_r_a > [data-testid="stLayoutWrapper"],
+  .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]{flex:1 1 100%;min-width:0;}
+  .st-key-fs_r_a [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important;gap:.4rem!important;}
+  .st-key-fs_r_a [data-testid="stColumn"]{flex:1 1 0!important;min-width:0!important;width:auto!important;}
+  .st-key-fs_r_a button{padding-left:1px!important;padding-right:1px!important;}
+  .st-key-fs_r_a button p{font-size:.78rem;}
   .fs-rlist{display:flex;}
   .fs-rrow.more,.fs-rhead.more{display:none;}
 }
@@ -294,7 +348,7 @@ def _i(text: str, where: str = "") -> str:
 def badge(tier: str, more: str = "", where: str = "", mini: bool = False) -> str:
     """The badge that says what kind of number sits next to it; `mini` is
     the glyph alone, for tight spots (the key at the top names each one)."""
-    g, name, col, style, tip = TIERS[tier]
+    g, name, col, style, tip = TIERS.get(tier) or SLOPE_TIERS[tier]
     t = f"{name}. " * mini + tip + (" " + _plain(more) if more else "")
     return (f"<span class='fs-badge fs-tip {where}' data-tip='{_esc(t)}' "
             f"style='--c:{col};border-style:{style}'>{g}{'' if mini else ' ' + name}</span>")
@@ -445,10 +499,13 @@ def _catchment_of(pl) -> int | None:
 
 
 # ── page furniture shared by the FloodSense pages ───────────────────────────
-def page_head(title: str, sub: str, icon: str = "◈", search_row=None):
+def page_head(title: str, sub: str, icon: str = "◈", search_row=None, warn: bool = True):
     """Logo, title, one line under it, and the place search (the same
     session key on every page, so a place picked on one is still picked on
-    the next). Returns the selected place, or None."""
+    the next). Returns the selected place, or None. `warn=False` for a page
+    whose right-hand slot is not the place search (the road page's route
+    picker): an unreadable search left over from another page is not its
+    business."""
     head = st.container(key="fs_head")
     h1, h2 = head.columns([1.3, 3.8], vertical_alignment="center")
     with h1:
@@ -459,7 +516,7 @@ def page_head(title: str, sub: str, icon: str = "◈", search_row=None):
     with h2:
         if search_row is not None:
             sel = search_row()
-    if sel is None and st.session_state.get("search") not in (None, G.PROMPT):
+    if warn and sel is None and st.session_state.get("search") not in (None, G.PROMPT):
         st.warning(f"Could not read **{st.session_state.search}** as a place or a coordinate.")
     return sel
 
@@ -499,10 +556,12 @@ def state_title(hint: str = "search a place or click the map") -> None:
                 unsafe_allow_html=True)
 
 
-def map_title(title: str, *badges: str, layers=()) -> dict:
+def map_title(title: str, *badges: str, layers=(), right=None, ratio=(6, 1)) -> dict:
     """The map card's title row, its badges, and a Layers menu of
-    (key, label, default) toggles. Returns {key: on}."""
-    t1, t2 = st.columns([6, 1], vertical_alignment="center")
+    (key, label, default) toggles. Returns {key: on}. `right`: a function
+    that draws something else in the Layers menu's place (`ratio` gives it
+    the room)."""
+    t1, t2 = st.columns(list(ratio), vertical_alignment="center")
     with t1:
         st.markdown("<div class='map-head' style='padding:0'><div class='mh-dot'></div>"
                     f"<div class='mh-title'>{title}</div>"
@@ -510,9 +569,12 @@ def map_title(title: str, *badges: str, layers=()) -> dict:
                     "</div>", unsafe_allow_html=True)
     out = {}
     with t2:
-        with st.popover(":material/layers:", width="stretch", help="Map layers"):
-            for key, label, default in layers:
-                out[key] = st.toggle(label, value=default, key=key)
+        if right is not None:
+            right()
+        else:
+            with st.popover(":material/layers:", width="stretch", help="Map layers"):
+                for key, label, default in layers:
+                    out[key] = st.toggle(label, value=default, key=key)
     return out
 
 
@@ -650,6 +712,34 @@ class _FullPanel(MacroElement):
             f"<div class='fsf-bar'><span class='fsf-t'>{_esc(title)}</span>"
             "<button type='button' class='fsf-x' title='Hide or show this panel'>Hide</button>"
             f"</div><div class='fsf-body'>{body}</div>")
+
+
+class Panel:
+    """What a page's place box says, kept as it is drawn so the same HTML can
+    ride on the map when the map is full screen (fullscreen_panel) — where
+    the page around the map cannot be seen. `show` draws on the page and
+    keeps; `keep` only keeps (for what the page draws as widgets: a title
+    with its ✕, a list of buttons). `title`: what the box is about when no
+    place is picked."""
+
+    def __init__(self, sel, title: str = "All of Arunachal",
+                 hint: str = "leave full screen to search; click the map to pick a place") -> None:
+        if sel:
+            self.parts = [f"<div class='fs-place'>{_esc(sel['label'])}<small>"
+                          f"{sel['lat']:.4f}°N, {sel['lon']:.4f}°E</small></div>"]
+        else:
+            self.parts = [f"<div class='fs-place'>{_esc(title)}<small>{_esc(hint)}</small></div>"]
+
+    def show(self, body: str) -> None:
+        st.markdown(body, unsafe_allow_html=True)
+        self.keep(body)
+
+    def keep(self, body: str) -> None:
+        # on the page a block may stretch to fill its column; on the map it must not
+        self.parts.append(body.replace(" fs-grow", ""))
+
+    def body(self, legend: str = "") -> str:
+        return "".join(self.parts) + legend
 
 
 def fullscreen_panel(title: str, body: str) -> MacroElement:

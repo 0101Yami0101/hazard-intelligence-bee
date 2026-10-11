@@ -18,6 +18,8 @@ layer — are in ui.py; each page here only arranges its own numbers.
 """
 from __future__ import annotations
 
+import html
+
 from dataclasses import replace
 from datetime import date, datetime
 
@@ -240,6 +242,7 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
     cl, cm, cr = U.main_row()
 
     # ── left: the place, or how the top colours held up ─────────────────
+    panel = U.Panel(sel)
     with cl, st.container(key="fs_col_l"):
         if not sel:
             U.state_title()
@@ -263,7 +266,7 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                                  "much from one flood to the next. Below about "
                                  f"{100*top[0]['p_lo']:.0f}% the numbers roughly match what "
                                  "happened.", "right"))
-                st.markdown(html_, unsafe_allow_html=True)
+                panel.show(html_)
             towns = _exposed_towns(len(shell.places), shell.places, grid, prob)
             if towns:
                 css = "".join(f".st-key-fs_pick_{i} button{{border-left:4px solid "
@@ -272,6 +275,12 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                 st.markdown(f"<style>{css}</style><div style='height:10px'></div>"
                             + U._sec("Most exposed places", U.badge("estimate", where="right")),
                             unsafe_allow_html=True)
+                panel.keep(U._sec("Most exposed places", U.badge("estimate", where="right"))
+                           + "".join(
+                               f"<div class='fsf-row' style='--c:"
+                               f"{WHERE_COLORS[max(_where_level(v) - 1, 0)]}'><span>"
+                               f"{html.escape(name)}</span><b>{_where_str(v)}</b></div>"
+                               for _, name, v in towns[:5]))
                 for i, (label, name, v) in enumerate(towns[:5]):
                     if st.button(f"{name}  ·  **{_where_str(v)}**", key=f"fs_pick_{i}",
                                  width="stretch", help=f"Open {name}"):
@@ -280,8 +289,8 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
         else:
             U.place_title(sel)
             if px is None:
-                st.markdown("<div class='fs-empty'><b>Outside the mapped area</b><br>This map "
-                            "covers Arunachal Pradesh only.</div>", unsafe_allow_html=True)
+                panel.show("<div class='fs-empty'><b>Outside the mapped area</b><br>This map "
+                           "covers Arunachal Pradesh only.</div>")
             else:
                 r, c = px
                 w = float(prob[r, c]) if np.isfinite(prob[r, c]) else 0.0
@@ -296,12 +305,11 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                          f"<i style='left:{min(w, 0.30) / 0.30 * 100:.0f}%'></i></div>"
                          "<div class='fs-meter-l'><span>0%</span><span>10%</span><span>20%</span>"
                          "<span>30%</span></div>")
-                st.markdown(U.hero(WHERE_WORDS[lvl], _where_str(w),
-                                   "if a flood comes within ~5 km",
-                                   "a property of the ground — the same every day",
-                                   WHERE_COLORS[max(lvl - 1, 0)] if lvl else "#6b7a8c",
-                                   WHERE_TEXT[lvl], "🌊", "estimate", bars_html=meter),
-                            unsafe_allow_html=True)
+                panel.show(U.hero(WHERE_WORDS[lvl], _where_str(w),
+                                  "if a flood comes within ~5 km",
+                                  "a property of the ground — the same every day",
+                                  WHERE_COLORS[max(lvl - 1, 0)] if lvl else "#6b7a8c",
+                                  WHERE_TEXT[lvl], "🌊", "estimate", bars_html=meter))
                 h = float(hand[r, c])
                 k2 = float(chan[r, c])
                 t = [U._tile("Height above river", f"{h:,.0f}<small> m</small>" if h < 2000 else
@@ -339,7 +347,7 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                                      f"below ~{100*top[0]['p_lo']:.0f}% it held up", "record",
                                      None, "Below this range the numbers roughly matched what "
                                      "happened.", "left"))
-                st.markdown(U._tiles(t, 2, grow=True), unsafe_allow_html=True)
+                panel.show(U._tiles(t, 2, grow=True))
 
     # ── centre: the map ──────────────────────────────────────────────────
     with cm, st.container(key="fs_col_m"):
@@ -351,9 +359,21 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
             box = st.container(height=U.MAP_H + 8, border=False, key="map_shell")
             m = M.base_map(grid, s)
 
+            shown = wcls > 0
+            shares = [float((wcls[shown] == i).mean()) if shown.any() else 0
+                      for i in range(1, len(WHERE_NAMES) + 1)]
+
             def _extras(fg):
                 if lay.get("fp_lyr_rivers"):
                     U.plain_rivers(fg, geo, grid)
+                # on the full-screen map the page around it cannot be seen:
+                # the place box and the colour key ride on the map
+                key = "" if s.bare else (
+                    U._sec("Colours on the map", U.badge("estimate", where="right"))
+                    + U.legend(WHERE_WORDS[1:], WHERE_COLORS, shares, WHERE_NAMES)
+                    .replace("class='fs-legend'", "class='fs-legend' style='margin-top:0'", 1))
+                U.fullscreen_panel("If a flood comes · where water can reach",
+                                   panel.body(key)).add_to(fg)
 
             fg = M.overlay_group(
                 grid, replace(s, rivers=False), geo,
@@ -369,9 +389,6 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
             if s.bare:
                 M.legend_strip([], [], bare=True)
             else:
-                shown = wcls > 0
-                shares = [float((wcls[shown] == i).mean()) if shown.any() else 0
-                          for i in range(1, len(WHERE_NAMES) + 1)]
                 st.markdown(U.legend(
                     WHERE_WORDS[1:], WHERE_COLORS, shares, WHERE_NAMES,
                     tip="If a flood is reported within about 5 km, the chance water reaches each "
@@ -524,15 +541,15 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
     cl, cm, cr = U.main_row()
 
     # ── left: the place's upstream rain, or the state's week ──────────────
+    panel = U.Panel(sel)
     with cl, st.container(key="fs_col_l"):
         if MM is None:
             (U.place_title(sel) if sel else U.state_title())
-            st.markdown("<div class='fs-empty'>No live rain right now.</div>",
-                        unsafe_allow_html=True)
+            panel.show("<div class='fs-empty'>No live rain right now.</div>")
         elif not sel:
             U.state_title()
             j = st.session_state.flc_day
-            st.markdown(U.hero(
+            panel.show(U.hero(
                 "Very wet or wetter", f"{100*share[j]:.0f}%",
                 "of catchments, for the time of year", _long_day(days[di]),
                 WET_COLORS[3], WET_TEXT[3], "💧", "input",
@@ -540,13 +557,13 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                 U.bars(share, [datetime.fromisoformat(days[i]).day for i in fut],
                        [WET_COLORS[3]] * len(fut),
                        [f"{day_name(i)}: {100*v:.0f}% very wet or wetter" for i, v in
-                        zip(fut, share)], on=j, faded=range(3, len(fut)), floor=0.10)),
-                unsafe_allow_html=True)
+                        zip(fut, share)], on=j, faded=range(3, len(fut)), floor=0.10)))
             st.markdown(U._sec("Arunachal average rain", U.badge("input", where="right"),
                                note="mm/day"), unsafe_allow_html=True)
             mean_mm = [float(np.mean(rain[i])) for i in range(len(days))]
             st.altair_chart(_rain_chart(days, mean_mm, di, fut[0]), width="stretch")
-            st.markdown(U._tiles([
+            panel.keep(U._sec("Arunachal average rain", U.badge("input", where="right")))
+            panel.show(U._tiles([
                 U._tile("Last 3 days", f"{sum(mean_mm[:fut[0]][-3:]):.0f}<small> mm</small>",
                         "past · state average", "input", None,
                         "Rain over the three days before today, averaged over the rain points.",
@@ -554,17 +571,17 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                 U._tile("Next 3 days", f"{sum(mean_mm[fut[0]:][:3]):.0f}<small> mm</small>",
                         "forecast · state average", "input", None,
                         "Forecast rain for today and the two days after, averaged over the rain "
-                        "points.", "left")], 2, grow=True), unsafe_allow_html=True)
+                        "points.", "left")], 2, grow=True))
         else:
             U.place_title(sel)
             if b0 is None:
-                st.markdown("<div class='fs-empty'>This spot is outside the mapped "
-                            "catchments.</div>", unsafe_allow_html=True)
+                panel.show("<div class='fs-empty'>This spot is outside the mapped "
+                           "catchments.</div>")
             else:
                 v, p = float(MM[di][b0]), float(PCT[di][b0])
                 k = int(np.digitize(p, WET_CUTS)) if np.isfinite(p) else 0
                 vals = [float(MM[i][b0]) for i in range(len(days))]
-                st.markdown(U.hero(
+                panel.show(U.hero(
                     f"{WET_NAMES[k]} upstream", f"{v:.0f}<small style='font-size:1.1rem'> mm"
                     "</small>", "mean rain over everything draining here", _long_day(days[di]),
                     WET_COLORS[max(k, 2)], WET_TEXT[k], "💧", "input",
@@ -574,11 +591,10 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                            ["#7fd4f0"] * len(days),
                            [f"{day_name(i)}: {x:.1f} mm" + (" (forecast)" if i >= fut[0] else "")
                             for i, x in enumerate(vals)], on=di,
-                           faded=range(fut[0], len(days)), floor=5.0)),
-                    unsafe_allow_html=True)
+                           faded=range(fut[0], len(days)), floor=5.0)))
                 past = [x for i, x in enumerate(vals) if i < fut[0]]
                 ahead = vals[fut[0]:]
-                st.markdown(U._tiles([
+                panel.show(U._tiles([
                     U._tile("For the time of year", f"{100*p:.0f}<small>th</small>" if
                             np.isfinite(p) else "—", "percentile, that day", "input", WET_TEXT[k],
                             "Where this upstream rain (its 3- and 7-day totals) sits among 16 "
@@ -591,8 +607,7 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                     U._tile("Last 3 days", f"{sum(past[-3:]):.0f}<small> mm</small>", "past",
                             "input", None, where="right"),
                     U._tile("Next 3 days", f"{sum(ahead[:3]):.0f}<small> mm</small>",
-                            "forecast rain", "input", None, where="left")], 2, grow=True),
-                    unsafe_allow_html=True)
+                            "forecast rain", "input", None, where="left")], 2, grow=True))
 
     # ── centre: the map ──────────────────────────────────────────────────
     with cm, st.container(key="fs_col_m"):
@@ -616,9 +631,22 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                     _, edge = _upstream(b0)
                     img[edge] = [255, 214, 102, 240]
 
+            wet_shares = None
+            if PCT is not None:
+                wet_shares = [float(np.mean(np.digitize(PCT[di], WET_CUTS) == i))
+                              for i in range(len(WET_NAMES))]
+
             def _extras(fg):
                 if lay.get("fc_lyr_rivers"):
                     U.plain_rivers(fg, geo, grid)
+                # on the full-screen map the page around it cannot be seen:
+                # the place box and the colour key ride on the map
+                key = "" if s.bare else (
+                    U._sec("Colours on the map", U.badge("input", where="right"))
+                    + U.legend(WET_NAMES, WET_COLORS, wet_shares)
+                    .replace("class='fs-legend'", "class='fs-legend' style='margin-top:0'", 1))
+                U.fullscreen_panel(f"Upstream rain vs normal{' · ' + when if when else ''}",
+                                   panel.body(key)).add_to(fg)
 
             fg = M.overlay_group(grid, replace(s, rivers=False), geo, img=img,
                                  districts=s.districts,
@@ -633,12 +661,8 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
             if s.bare:
                 M.legend_strip([], [], bare=True)
             else:
-                shares = None
-                if PCT is not None:
-                    cls_b = np.digitize(PCT[di], WET_CUTS)
-                    shares = [float(np.mean(cls_b == i)) for i in range(len(WET_NAMES))]
                 st.markdown(U.legend(
-                    WET_NAMES, WET_COLORS, shares,
+                    WET_NAMES, WET_COLORS, wet_shares,
                     tip="How unusual the rain falling upstream of each catchment is for that "
                         "catchment — not millimetres, not a river level, and not a flood chance. "
                         "The share is of the 1,680 catchments.",
@@ -997,9 +1021,11 @@ def render(shell) -> None:
             _record_note(mf.get("radar"), mf.get("record")),
             "<b>Short flash floods</b> in remote, steep valleys — the least likely to be "
             "reported, so the chance there is most likely to be too low.",
-            "<b>A river sitting right at its line.</b> When a river stays within a few "
-            "centimetres of its line for days, whether a day counts as “reached” hangs on "
-            "those centimetres, and the chance is least reliable there. Read the level line.",
+            "<b>A river already above its line.</b> In past records, whether such a river "
+            "was still above its line a day or two later was close to even odds, and the "
+            "forecast's small chances were too low then. So for the 4 days after its last "
+            "full day of readings a chance under 5% is shown as “unsure”, not as a number. "
+            "Read the level line for where the river is expected to sit.",
             "<b>Depth.</b> How deep the water gets needs a 2-D flood model on detailed "
             "elevation data — a different project.",
             "<b>Dam releases.</b> A scheduled release can flood a reach on a dry day.",

@@ -90,7 +90,7 @@
   },
   "caveats": [
     "Relative susceptibility index, not probability of failure (presence-only data \u2014 there is no denominator).",
-    "Rainfall is ~33 km sampled Open-Meteo; terrain is 100 m. The map's fine texture is terrain, not weather.",
+    "Rainfall is ~22 km sampled Open-Meteo (219 points); terrain is 100 m. The map's fine texture is terrain, not weather.",
     "Hindcast AUC 0.768 used 11 km IMERG; the live forecast uses a coarser source and is expected to be somewhat weaker.",
     "Out-of-domain cells (ice, water, slope <=10 deg) are NOT scored.",
     "Not for operational safety decisions."

@@ -20,6 +20,9 @@ from __future__ import annotations
 CLASS_NAMES = ["Very Low", "Low", "Moderate", "High", "Very High"]
 CLASS_COLORS = ["#1a9850", "#a6d96a", "#fee08b", "#f46d43", "#a50026"]
 NOT_ASSESSED = "#3a4351"
+# The same five levels as TEXT on the dark panels: the two ends of the ramp
+# (a deep green, a deep red) are fills, and too dark to read as type.
+CLASS_TEXT = ["#4cc37a", "#a6d96a", "#fee08b", "#f68a5c", "#ff5a73"]
 
 ACCENT = "#2ee6d6"
 ACCENT_2 = "#4d8dff"
@@ -389,6 +392,21 @@ div[data-testid="stExpander"] > details{
 .arch-legend .lg-built{border-top:2px solid var(--mut);}
 .arch-legend .lg-plan{border-top:2px dashed var(--dim);}
 .arch-hint{margin-left:auto;font-style:italic;}
+/* A phone: lanes are two across and narrow, so a name plus its "planned"
+   mark can need three lines — the fixed 48px box cut the name off ("Hosted
+   scheduling", 2026-10-10). Boxes grow there; the return path may wrap. */
+/* A phone: the day buttons four to a row. Streamlit stacks columns one per
+   row under 640px, which put seven full-width buttons between the search
+   box and the map. */
+@media (max-width:640px){
+  [class*="st-key-daystrip_"] [data-testid="stHorizontalBlock"]{flex-wrap:wrap!important;gap:.5rem!important;}
+  [class*="st-key-daystrip_"] [data-testid="stColumn"]{flex:1 1 22%!important;min-width:22%!important;width:auto!important;}
+  [class*="st-key-daystrip_"] button p{font-size:.78rem;}
+}
+@media (max-width:640px){
+  .arch-node{height:auto;min-height:48px;}
+  .arch-loop{flex-wrap:wrap;gap:6px 11px;}
+}
 
 /* ---- landing page: compact, one screen, no scrolling ---- */
 /* Each tile carries its module's accent through --tile, set inline, so the

@@ -3290,7 +3290,7 @@
   "stages": [
    {
     "name": "Fetch",
-    "scripts": 42,
+    "scripts": 43,
     "what": "Pull from source archives \u2014 NASA, Copernicus, ESA, GSI, HydroSHEDS, OpenStreetMap, the state portals, and the river gauges of CWC and NWDP.",
     "out": "10,853 raw files, 308.4 GB",
     "note": "Raw files are never edited in place, and every fetch writes its source, licence and checksum alongside."
@@ -3311,16 +3311,16 @@
    },
    {
     "name": "Model",
-    "scripts": 49,
+    "scripts": 54,
     "what": "Fit where-it-fails and where-it-floods on verified evidence; score today's weather and river readings against each place's own history.",
     "out": "9,555 days of rainfall history",
     "note": "Validated by hiding whole regions during training, so scores come from ground the model has never seen."
    },
    {
     "name": "Export",
-    "scripts": 4,
+    "scripts": 5,
     "what": "Cut the small web bundles the app actually reads.",
-    "out": "5.3 MB",
+    "out": "5.1 MB",
     "note": "Small enough for a free host \u2014 which is why the live app carries no model files and no geospatial stack."
    }
   ],
@@ -3399,11 +3399,11 @@
    },
    {
     "name": "Verified flood record",
-    "held": "2,185 floods",
+    "held": "2,180 floods",
     "covers": "2003-07-06 to 2026-07-29",
-    "updated": "2026-09-27",
+    "updated": "2026-10-10",
     "kept": "archive",
-    "note": "Confirmed by: radar 1,153, gfd 1,016, gauge 71, gauge-xc 59. Rebuilt by hand; what the daily run finds (a gauge crossing its line, a confirmed report) is logged beside it and joins at the next rebuild."
+    "note": "Confirmed by: radar 1,153, gfd 1,016, gauge 66, gauge-xc 59. Rebuilt by hand; what the daily run finds (a gauge crossing its line, a confirmed report) is logged beside it and joins at the next rebuild."
    },
    {
     "name": "Landslide evidence",
@@ -3415,36 +3415,44 @@
    },
    {
     "name": "River readings logged live",
-    "held": "30 gauges \u00b7 339 daily highs",
-    "covers": "2026-09-20 to 2026-10-05",
-    "updated": "2026-10-06",
+    "held": "30 gauges \u00b7 407 daily highs",
+    "covers": "2026-09-20 to 2026-10-09",
+    "updated": "2026-10-09",
     "kept": "daily",
     "note": "What the gauges read on each forecast day \u2014 the readings forecasts are graded against."
    },
    {
     "name": "Flood forecast log",
-    "held": "3,136 river forecasts",
-    "covers": "2026-09-21 to 2026-10-06",
-    "updated": "2026-10-06",
+    "held": "4,032 river forecasts",
+    "covers": "2026-09-21 to 2026-10-11",
+    "updated": "2026-10-11",
     "kept": "daily",
-    "note": "1,564 graded against the gauges so far."
+    "note": "1,938 graded against the gauges so far."
+   },
+   {
+    "name": "Landslide forecast log",
+    "held": "1 daily issues \u00b7 7 days each",
+    "covers": "2026-10-10 to 2026-10-10",
+    "updated": "2026-10-10",
+    "kept": "daily",
+    "note": "Every rain point's trigger and each district's outlook, written down before the day. Not graded yet: that needs dated landslide records."
    }
   ],
   "loop": {
-   "issued_on": "2026-10-06",
-   "generated_at": "2026-10-06 12:23",
+   "issued_on": "2026-10-11",
+   "generated_at": "2026-10-11 00:37",
    "gauges": 32,
-   "gauges_offline": 3,
+   "gauges_offline": 15,
    "first_issue": "2026-09-21",
-   "forecasts_logged": 3136,
-   "forecasts_checked": 1564,
-   "outlook_issues_logged": 7,
+   "forecasts_logged": 4032,
+   "forecasts_checked": 1938,
+   "outlook_issues_logged": 11,
    "outlook_issues_graded": 0
   },
   "runs": {
    "first": "2026-09-22",
-   "last": "2026-10-06",
-   "n_days_run": 13,
+   "last": "2026-10-09",
+   "n_days_run": 16,
    "missed": [
     "2026-10-01",
     "2026-10-03"
@@ -3463,7 +3471,7 @@
    },
    {
     "name": "Flood \u2014 when",
-    "trained": "2026-09-29",
+    "trained": "2026-10-10",
     "what": "The chance of a flood near a place on a day."
    },
    {
@@ -3473,17 +3481,17 @@
    },
    {
     "name": "River \u2014 chance of reaching its line",
-    "trained": "2026-10-06",
+    "trained": "2026-10-10",
     "what": "One model per day ahead, 9 days, 32 gauges."
    },
    {
     "name": "River \u2014 level",
-    "trained": "2026-10-06",
+    "trained": "2026-10-10",
     "what": "The river's daily high; drawn 2 days ahead."
    }
   ]
  },
- "generated_utc": "2026-10-07T02:27:13",
+ "generated_utc": "2026-10-10T19:08:29",
  "privacy": {
   "rule": "No source dataset can be reconstructed from this bundle.",
   "histograms": "28 bins per layer \u2014 shape only, no cell values",

@@ -296,7 +296,7 @@
    "title": "Context & benchmarks",
    "purpose": "Official hazard products we are measured against, not trained on.",
    "n_files": 8,
-   "bytes": 64653463,
+   "bytes": 64539309,
    "sources": [
     {
      "source": "Macrostrat geologic_units/map API",
@@ -322,10 +322,10 @@
      "source": "GSI National Landslide Susceptibility Map (50 m)",
      "url": "https://bhusanket.gsi.gov.in/gisserver/rest/services/GSI/Susceptibility/ImageServer/exportImage",
      "license": "UNSTATED \u2014 GSI product accessed via the portal's public proxy. Confirm redistribution rights before shipping.",
-     "fetched": "2026-07-29",
-     "notes": "3-class susceptibility (1 Low / 2 Moderate / 3 High). Benchmark to evaluate our own susceptibility output against, not a training input.",
+     "fetched": "2026-10-10",
+     "notes": "3-class susceptibility (1 Low / 2 Moderate / 3 High), on GSI's own grid (EPSG:32644, 50 m), cell for cell. Re-fetched 2026-10-10: the first copy was resampled by the server and did not match the source. Benchmark only, never a model input.",
      "n_files": 1,
-     "bytes": 4370107,
+     "bytes": 4255850,
      "n_fetches": 1
     }
    ]
@@ -418,6 +418,6 @@
   }
  ],
  "total_files": 10853,
- "total_bytes": 308417121889,
+ "total_bytes": 308417007735,
  "n_sources": 29
 }

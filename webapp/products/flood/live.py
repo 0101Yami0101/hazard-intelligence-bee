@@ -207,6 +207,50 @@ def _chip(p: float) -> str:
             f"{_pct_short(p)}</span>")
 
 
+# A river already above its line: no small percentage for the next days.
+# Seven designs were tested against "of the river-above days given under 5%,
+# fewer than 1 in 10 flood" (FLOOD_WHEN_PILOT_PLAN.md §13h-§18); it still
+# fails 2 and 3 days after the reading (about 21% and 11% flooded), and on
+# the record whether a high river is still above its line a day or two later
+# is close to even odds. So where the river was at or above its line on its
+# last full day, a chance under 5% for a day within 4 days of that reading is
+# not shown as a number. Screen only: the forecast, its log and its grading
+# are untouched. Beyond 4 days the small numbers held (under 1 in 10).
+UNSURE_BELOW, UNSURE_DAYS = 0.05, 4
+UNSURE = "unsure"
+UNSURE_TIP = ("The river is above its line now. On past records, whether such a river is "
+              "still above its line over the next few days was close to even odds, and the "
+              "forecast's small numbers were too low then. So no small percentage is shown "
+              "for the 4 days after its last full day of readings; see the level line on its "
+              "graph for where it is expected to sit.")
+
+
+def _high_now(r: dict) -> bool:
+    """At or above its line on its last full day of readings — the state the
+    forecast itself reads."""
+    v = r.get("last_day_max")
+    return v is not None and r.get("last_complete_day") is not None and v >= r["threshold"]
+
+
+def _unsure(r: dict, d: str, x: dict) -> bool:
+    if not _high_now(r) or x["p"] >= UNSURE_BELOW:
+        return False
+    n = (datetime.fromisoformat(d).date()
+         - datetime.fromisoformat(r["last_complete_day"]).date()).days
+    return 1 <= n <= UNSURE_DAYS
+
+
+def _week_unsure(r: dict, xs: dict) -> bool:
+    """For a figure that sums up several days as their highest chance: unsure
+    when that highest chance is itself small and any of the days is unsure."""
+    return (bool(xs) and max(x["p"] for x in xs.values()) < UNSURE_BELOW
+            and any(_unsure(r, d, x) for d, x in xs.items()))
+
+
+UNSURE_CHIP = ("<span class='fs-chip' style='--c:#3a4250;--k:#e8b04a' title=\"" + UNSURE_TIP
+               + "\">" + UNSURE + "</span>")
+
+
 def _move(a0: float, a1: float) -> str:
     """was → now, with an arrow: warm up, cool down."""
     arrow = ("<span class='fs-up'>▲</span>" if a1 > a0 * 1.05 + 1e-9 else
@@ -505,19 +549,28 @@ def _gauge_popup(r: dict, unit: str) -> folium.Popup:
     cells = []
     for d, x in r["days"].items():
         k = _band(x["p"])
+        un = _unsure(r, d, x)
         dd = datetime.fromisoformat(d).date()
         cells.append(
             f"<td style='padding:0 2px;text-align:center'>"
             f"<div style='font-size:10px;color:#5b6673;line-height:1.25'>"
             f"{'Today' if dd == date.today() else dd.strftime('%a')}<br>{dd:%d}</div>"
             f"<div style='margin-top:3px;padding:2px 4px;border-radius:5px;"
-            f"background:{CHANCE_COLORS[k]};color:{CHANCE_INK[k]};font-weight:700;"
-            f"font-size:11px;white-space:nowrap'>{_pct_short(x['p'])}</div></td>")
+            f"background:{'#e9edf2' if un else CHANCE_COLORS[k]};"
+            f"color:{'#8a5a00' if un else CHANCE_INK[k]};font-weight:700;"
+            f"font-size:11px;white-space:nowrap'>{'?' if un else _pct_short(x['p'])}</div></td>")
     top = ""
     if r["days"]:
         d_, x = max(r["days"].items(), key=lambda t: t[1]["p"])
         top = (f"<div style='margin:6px 0 4px'>Chance of reaching its line: "
                f"<b>{_pct(x['p'])}</b> at most, {_day_short(d_)} · {_esc(x['basis'])}</div>")
+        if any(_unsure(r, d, v) for d, v in r["days"].items()):
+            if _week_unsure(r, r["days"]):
+                top = ("<div style='margin:6px 0 2px'><b>High now — the next days are "
+                       "uncertain.</b></div>")
+            top += ("<div style='margin:0 0 4px;color:#5b6673'>? = above its line now; on past "
+                    "records staying above was close to even odds, so no small percentage is "
+                    "shown for those days.</div>")
     hist = r.get("history") or []
     if hist:
         d, v = hist[-1]
@@ -551,7 +604,8 @@ def _gauge_popup(r: dict, unit: str) -> folium.Popup:
     return folium.Popup(body, max_width=380)
 
 
-def _gauge_marker(r: dict, p: float, label: bool, when: str, unit: str = "") -> folium.Marker:
+def _gauge_marker(r: dict, p: float, label: bool, when: str, unit: str = "",
+                  unsure: bool = False) -> folium.Marker:
     """A gauge: a diamond, so it never reads as a place. Pale blue while its
     chance is under 2%, the chance colour above; a red halo when the river is
     above its line now; dashed and hollow when the gauge is offline.
@@ -575,10 +629,12 @@ def _gauge_marker(r: dict, p: float, label: bool, when: str, unit: str = "") -> 
                   f"white-space:nowrap;background:rgba(11,15,20,.88);border:1px solid #4d8dff88;"
                   f"border-radius:7px;padding:1px 7px;font:600 11px Inter,system-ui,sans-serif;"
                   f"color:#e5edf5;box-shadow:0 2px 8px rgba(0,0,0,.45)'>"
-                  f"{_esc(r['station_name'])} <b style='color:{CHANCE_TEXT[k]}'>"
-                  f"{_pct_short(p)}</b></div>")
-    tip = (f"{r['station_name']} gauge — {_pct(p)} chance of reaching its line"
-           f" ({when}) · checked forecast"
+                  f"{_esc(r['station_name'])} <b style='color:{'#e8b04a' if unsure else CHANCE_TEXT[k]}'>"
+                  f"{UNSURE if unsure else _pct_short(p)}</b></div>")
+    tip = ((f"{r['station_name']} gauge — high now, the next days are uncertain"
+            if unsure else
+            f"{r['station_name']} gauge — {_pct(p)} chance of reaching its line"
+            f" ({when}) · checked forecast")
            + (" · ABOVE its line now" if r["above_threshold_now"] else "")
            + (" · gauge offline" if r.get("gauge_offline") else "")
            + (" · its exact spot on the river is not known" if r.get("unplaced") else "")
@@ -791,9 +847,12 @@ def _place_tiles(sel, pl, snap, period, rp, fmeta, own, river_at, levels) -> lis
             usual = ("" if r["official"] else
                      " That line is the river's own wettest 2% of days, so about 2% is an "
                      "ordinary day, and most days it is reached no flood is recorded.")
-            tiles.append(_tile("River reaches its line", _pct_short(x["p"]),
-                               f"{_esc(r['station_name'])} gauge · {where_}<br>{when}",
-                               "forecast", CHANCE_TEXT[_band(x["p"])],
+            un = _week_unsure(r, xs) if period < 0 else _unsure(r, days[period], x)
+            tiles.append(_tile("River reaches its line", UNSURE if un else _pct_short(x["p"]),
+                               f"{_esc(r['station_name'])} gauge · {where_}<br>"
+                               + ("high now · next days uncertain" if un else when),
+                               "forecast", "#e8b04a" if un else CHANCE_TEXT[_band(x["p"])],
+                               (UNSURE_TIP + " " if un else "") +
                                f"Not the flood chance near here (the headline above): this is "
                                f"the chance the river at {r['station_name']} reaches {what}."
                                f"{usual} Graded every day against the gauge's real readings. "
@@ -979,7 +1038,8 @@ def _rivers_panel(rp, levels, own_code, days) -> None:
         rows.append(f"<div class='fs-rrow{own}{' more' if i == 7 else ''}'>"
                     f"<div class='fs-rname'>{_esc(r['station_name'])}"
                     f"{flag}<small>{r['network']} · {_day_short(d_)}</small></div>"
-                    f"{_spark_svg(r.get('history'), r['threshold'])}{_chip(p)}</div>")
+                    f"{_spark_svg(r.get('history'), r['threshold'])}"
+                    f"{UNSURE_CHIP if _week_unsure(r, xs) else _chip(p)}</div>")
     st.markdown("<div class='fs-rlist fs-grow'>" + head() + "".join(rows[:4]) + head(" more")
                 + "".join(rows[4:]) + "</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='fs-foot'>All {len(rp)} gauges: the river board below "
@@ -1171,6 +1231,34 @@ def _changes(snap, k: int | None, sel) -> str:
                    'are each for the 7 days that issue covered.', 'right')}</div>")
 
 
+FEED_NAME = {"NWDP": "Small-river gauge feed", "CWC": "Big-river gauge feed"}
+
+
+def _feed_outages(rivers: list, issued: str) -> list[dict]:
+    """A whole gauge network gone quiet at its source, as against single
+    gauges being offline: at least half of a network's gauges (and five or
+    more) offline, their last readings within three days of each other and
+    within the last 60 days. Seen 2026-09-29: the government small-river
+    table (NWDP) stopped receiving rows for every station at once, and each
+    gauge then read as "offline" with nothing saying the feed itself was
+    down. Gauges long dead (Kamlang since 2025) are not part of an outage."""
+    out = []
+    for net in sorted({r["network"] for r in rivers}):
+        g = [r for r in rivers if r["network"] == net]
+        off = [r for r in g if r.get("gauge_offline") and r.get("newest_reading_day")]
+        if not off:
+            continue
+        last = max(r["newest_reading_day"] for r in off)
+        d0 = datetime.fromisoformat(last)
+        hit = [r for r in off
+               if 0 <= (d0 - datetime.fromisoformat(r["newest_reading_day"])).days <= 3]
+        if (len(hit) >= 5 and 2 * len(hit) >= len(g)
+                and (datetime.fromisoformat(issued) - d0).days <= 60):
+            out.append({"network": net, "name": FEED_NAME.get(net, f"{net} gauge feed"),
+                        "since": last, "gauges": sorted(r["station_name"] for r in hit)})
+    return out
+
+
 def _attention(snap, rp, rivers, chance, hot, when: str) -> str:
     """What stands out today, from our own numbers only — no advice we
     cannot back (bridges and evacuation need district data we lack)."""
@@ -1192,8 +1280,19 @@ def _attention(snap, rp, rivers, chance, hot, when: str) -> str:
             rows.append(_row("▦", CHANCE_COLORS[3], f"<b>{n10}</b> area{'s' if n10 != 1 else ''} "
                              f"at 10%+ · {_esc(names)}", badge("outlook", where="left")))
     off = [r["station_name"] for r in rivers if r.get("gauge_offline")]
+    for o in _feed_outages(rivers, snap["issued_on"]):
+        since = datetime.fromisoformat(o["since"]).strftime("%d %b")
+        rows.append(_row("⦸", "#e8b04a", f"<b>{o['name'].replace(' gauge', '')} down</b> · "
+                         f"{since}",
+                         _i(f"{len(o['gauges'])} gauges. The source has published no readings for them since "
+                            f"{since} — the whole feed, not single gauges, and nothing on our "
+                            f"side. Until it returns, these rivers are forecast from rain "
+                            f"alone, which is less sure than rain plus the river's own "
+                            f"reading: {', '.join(o['gauges'])}.", "left")))
+        off = [n for n in off if n not in o["gauges"]]
     if off:
-        rows.append(_row("⦸", "#8fa3ba", f"<b>{len(off)}</b> gauges offline",
+        rows.append(_row("⦸", "#8fa3ba", f"<b>{len(off)}</b> gauge{'s' if len(off) != 1 else ''} "
+                         "offline",
                          _i("Their chances rest on rain alone: " + ", ".join(off) + ".", "left")))
     sw = snap.get("soil_wetness") or {}
     if sw and not sw.get("used", True):
@@ -1232,7 +1331,30 @@ def _track(snap) -> str:
                             "times so far")], 3) + "</div>"
             + f"<div class='fs-foot'>Outlook: {nhr.get('issues_logged', 0)} issue"
               f"{'s' if nhr.get('issues_logged', 0) != 1 else ''} logged · "
-              f"{nhr.get('issues_graded', 0)} graded {_i(tip, 'left')}</div>")
+              f"{nhr.get('issues_graded', 0)} graded {_i(tip, 'left')}</div>"
+            + _level_graded(tr))
+
+
+def _level_graded(tr: dict) -> str:
+    """One line on how the dotted level line has done against the gauges,
+    with the detail behind an ⓘ. Empty until something has been graded."""
+    x = (((tr.get("level_line") or {}).get("by_network") or {}).get("CWC"))
+    if not x or not x.get("n"):
+        return ""
+    by = x.get("by_days_after_last_reading") or {}
+    parts = [f"{k} day{'s' if k != '1' else ''} after the last full day of readings: typical "
+             f"miss {v['typical_miss']:.2f} m, range held {v['range_held_pct']:.0f}% "
+             f"({v['n']} days)" for k, v in sorted(by.items())]
+    tip = (f"The dotted level line on the gauge graphs, checked against what each river then "
+           f"did: {x['n']} gauge-days at {x['gauges']} gauges so far. Miss = the middle of "
+           f"the line against the day's highest reading. Its shaded range is built to hold "
+           f"8 days in 10. {'; '.join(parts)}. Had each river simply stayed where it was, the "
+           f"average miss would have been {x['mean_miss_if_river_stayed_put']:.2f} m against "
+           f"the line's {x['mean_miss']:.2f} m."
+           + (" Too few days to judge yet, and they are quiet autumn days: a river in flood "
+              "is harder." if x.get("too_few_to_judge") else ""))
+    return (f"<div class='fs-foot'>Level line: {x['n']} checked · {x['typical_miss']:.2f} m off "
+            f"· {x['range_held_pct']:.0f}% in range {_i(tip, 'left')}</div>")
 
 
 # ── one gauge's graph, and the board of all of them ──────────────────────────
@@ -1271,7 +1393,12 @@ def _level_forecast(r: dict) -> pd.DataFrame:
     return pd.DataFrame(out, columns=cols)
 
 
-def _gauge_chart(r: dict, lv: dict | None, days: list[str]):
+# One width for the y axis of both halves of the gauge graph, so their plots
+# start at the same x whatever the numbers' length (2,231.30 m or 0.4%).
+Y_AXIS = alt.Axis(minExtent=58, maxExtent=58)
+
+
+def _gauge_chart(r: dict, lv: dict | None, days: list[str]) -> list:
     """A river gauge the way Google Flood Hub draws one: the last 30 days of
     measured daily highs, a "Now" line, the river's published warning /
     danger / highest-ever lines — and, below on the same time axis, our
@@ -1315,7 +1442,7 @@ def _gauge_chart(r: dict, lv: dict | None, days: list[str]):
         layers = [alt.Chart(hist).mark_line(color=T.ACCENT_2, strokeWidth=2.5,
                                             point=alt.OverlayMarkDef(size=22, color=T.ACCENT_2))
                   .encode(x=alt.X("date:T", scale=xs, title=None),
-                          y=alt.Y("value:Q", scale=ys, title=f"{qty} ({unit})"),
+                          y=alt.Y("value:Q", scale=ys, title=f"{qty} ({unit})", axis=Y_AXIS),
                           detail="seg:N",
                           tooltip=[alt.Tooltip("date:T", title="day"),
                                    alt.Tooltip("value:Q", title=f"daily high ({unit})", format=".2f")])]
@@ -1356,24 +1483,32 @@ def _gauge_chart(r: dict, lv: dict | None, days: list[str]):
                                                color="#8b95a3", baseline="top")
                       .encode(x=alt.X("date:T", scale=xs), y=alt.value(0), text="t:N"))
         parts.append(alt.layer(*layers).properties(height=250))
-    bars = pd.DataFrame([{"date": pd.Timestamp(d), "chance": 100 * x["p"], "shown": _pct(x["p"]),
-                          "basis": x["basis"], "color": CHANCE_COLORS[_band(x["p"])]}
+    bars = pd.DataFrame([{"date": pd.Timestamp(d), "chance": 100 * x["p"],
+                          "shown": ("uncertain — the river is above its line now"
+                                    if _unsure(r, d, x) else _pct(x["p"])),
+                          "basis": x["basis"],
+                          "color": "#6b7480" if _unsure(r, d, x) else CHANCE_COLORS[_band(x["p"])]}
                          for d, x in sorted(r["days"].items())])
     what = ("its danger level" if r["official"] else "its wettest-2% mark")
     parts.append(alt.Chart(bars).mark_bar(size=14, cornerRadiusTopLeft=2, cornerRadiusTopRight=2)
                  .encode(x=alt.X("date:T", scale=xs, title=None),
-                         y=alt.Y("chance:Q", title=f"chance of reaching {what}, %"),
+                         y=alt.Y("chance:Q", title="chance, %", axis=Y_AXIS),
                          color=alt.Color("color:N", scale=None),
                          tooltip=[alt.Tooltip("date:T", title="day"),
                                   alt.Tooltip("shown:N", title="chance"),
                                   alt.Tooltip("basis:N", title="based on")])
                  .properties(height=110))
-    return (alt.vconcat(*parts, spacing=6).resolve_scale(x="shared")
-            .properties(background="transparent")
-            .configure_axis(labelColor="#8b95a3", titleColor="#8b95a3",
-                            gridColor="#8b95a333", domainColor="#8b95a366",
-                            tickColor="#8b95a366")
-            .configure_view(strokeWidth=0))
+    # ⚠️ Two charts, not one joined chart. A joined (vconcat) chart does not
+    # size itself to its box: its width is the plot's, with the axis added
+    # outside, so on a phone it ran 66 px past the screen and the whole page
+    # scrolled sideways (2026-10-10). A single chart does fit. The two share
+    # the same time scale and the same axis width (Y_AXIS), so their plots
+    # line up one under the other exactly as the joined chart's did.
+    return [(c.properties(background="transparent")
+             .configure_axis(labelColor="#8b95a3", titleColor="#8b95a3",
+                             gridColor="#8b95a333", domainColor="#8b95a366",
+                             tickColor="#8b95a366")
+             .configure_view(strokeWidth=0)) for c in parts]
 
 
 def _board(rivers: list[dict], days: list[str]):
@@ -1391,10 +1526,13 @@ def _board(rivers: list[dict], days: list[str]):
                 continue
             p = x["p"]
             k = _band(p)
+            un = _unsure(r, d, x)
             rows.append({"code": r["station_code"], "name": name, "day": _day_short(d),
-                         "p": p, "shown": _pct(p),
-                         "txt": "·" if p < 0.001 else (f"{100*p:.1f}" if p < 0.10 else f"{100*p:.0f}"),
-                         "fill": CHANCE_COLORS[k], "ink": CHANCE_INK[k] if k else "#b8c4d2",
+                         "p": p, "shown": "uncertain — above its line now" if un else _pct(p),
+                         "txt": ("?" if un else "·" if p < 0.001
+                                 else (f"{100*p:.1f}" if p < 0.10 else f"{100*p:.0f}")),
+                         "fill": "#3a4250" if un else CHANCE_COLORS[k],
+                         "ink": "#e8b04a" if un else CHANCE_INK[k] if k else "#b8c4d2",
                          "basis": x["basis"],
                          "line": "official danger level" if r["official"] else "own wettest 2%"})
     df = pd.DataFrame(rows)
@@ -1463,8 +1601,12 @@ def _gauge_detail(snap, levels, rivers_by: dict, own) -> None:
                        None, line_tip))
     if r["days"]:
         d_, x = max(r["days"].items(), key=lambda t: t[1]["p"])
-        tiles.append(_tile("Highest chance", _pct_short(x["p"]), f"{_day_short(d_)} · {x['basis']}",
-                           "forecast", CHANCE_TEXT[_band(x["p"])],
+        un = _week_unsure(r, r["days"])
+        tiles.append(_tile("Highest chance", UNSURE if un else _pct_short(x["p"]),
+                           "high now · next days uncertain" if un
+                           else f"{_day_short(d_)} · {x['basis']}",
+                           "forecast", "#e8b04a" if un else CHANCE_TEXT[_band(x["p"])],
+                           (UNSURE_TIP + " " if un else "") +
                            "The chance the river reaches its line that day — graded every day "
                            "against the gauge.", "left"))
     fc = _level_forecast(r)
@@ -1480,7 +1622,12 @@ def _gauge_detail(snap, levels, rivers_by: dict, own) -> None:
     else:
         tiles.append(_tile("Network", r["network"], net, None, None))
     st.markdown(_tiles(tiles, 4), unsafe_allow_html=True)
-    st.altair_chart(_gauge_chart(r, lv, days), width="stretch")
+    with st.container(key="fs_gchart"):
+        for ch in _gauge_chart(r, lv, days):
+            st.altair_chart(ch, width="stretch")
+    if r.get("no_level_line"):
+        st.markdown(f"<div class='fs-foot' style='color:#e8b04a'>{_esc(r['no_level_line'])}"
+                    "</div>", unsafe_allow_html=True)
     st.markdown(
         "<div class='fs-foot'>Line: measured daily high · "
         + ("dotted: our forecast of the level · " if len(fc) else "")
@@ -1491,6 +1638,7 @@ def _gauge_detail(snap, levels, rivers_by: dict, own) -> None:
              + ("Dotted line and shaded band: our forecast of the daily high for the two days "
                 "after the last full day of readings; the band is where 8 in 10 such days have "
                 "landed. It is not drawn further ahead." if len(fc) else
+                r["no_level_line"] if r.get("no_level_line") else
                 "No forecast of the level is drawn for this gauge today: it needs a full day "
                 "of readings no more than two days old.")
              + (" Hollow dots: days the gauge sent fewer than half its readings — the day's "
@@ -1670,6 +1818,7 @@ def render(shell, s, search_row) -> None:
     high = sum(1 for _, xs in rp if _river_p(xs) >= CHANCE_CUTS[2])
     above = [r["station_name"] for r in rivers if r["above_threshold_now"]]
     off = [r["station_name"] for r in rivers if r.get("gauge_offline")]
+    feeds = _feed_outages(rivers, snap["issued_on"])
     kpis = []
     if nh is not None:
         a = nh["arunachal_week"] if period < 0 else nh["arunachal_daily"][period]
@@ -1697,8 +1846,13 @@ def render(shell, s, search_row) -> None:
                       "measured", "#ff5a73" if above else None,
                       "Rivers whose latest readings are already above their line.", "left"))
     kpis.append(_tile("Gauges reporting", f"{len(rivers) - len(off)}<small>/{len(rivers)}</small>",
-                      f"{len(off)} offline" if off else "all online", "measured", None,
-                      ("Offline: " + ", ".join(off) + ". Their chances rest on rain alone.")
+                      (f"{len(off)} offline · {feeds[0]['name'].split()[0].lower()} feed down"
+                       if feeds else f"{len(off)} offline") if off else "all online",
+                      "measured", "#e8b04a" if feeds else None,
+                      ("".join(f"{o['name']} down at its source since "
+                               f"{datetime.fromisoformat(o['since']):%d %b}: {len(o['gauges'])} "
+                               "gauges. " for o in feeds)
+                       + "Offline: " + ", ".join(off) + ". Their chances rest on rain alone.")
                       if off else "Every gauge sent a complete day recently.", "left"))
     st.markdown(_tiles(kpis, len(kpis)), unsafe_allow_html=True)
 
@@ -1795,11 +1949,14 @@ def render(shell, s, search_row) -> None:
             gi_own = -1
             if link is not None and show_rivers:
                 pmap = {r["station_code"]: (r, _river_p(xs)) for r, xs in rp}
+                unsure_codes = {r["station_code"] for r, xs in rp if _week_unsure(r, xs)}
                 for gi, c in enumerate(codes):
                     if c in pmap:
                         r, p = pmap[c]
                         k = _band(p)
                         reach[gi] = (RIVER_QUIET if k == 0 else CHANCE_COLORS[k],
+                                     f"{r['station_name']} gauge's stretch · high now, the next "
+                                     f"days are uncertain" if c in unsure_codes else
                                      f"{r['station_name']} gauge's stretch · {_pct(p)} chance "
                                      f"of reaching its line ({when}) · checked forecast")
                         if c == own_code:
@@ -1822,8 +1979,8 @@ def render(shell, s, search_row) -> None:
                     for r, xs in rp:
                         p = _river_p(xs)
                         _gauge_marker(r, p, r["station_code"] in glabel, when,
-                                      (levels.get(r["station_code"]) or {}).get("unit", "")
-                                      ).add_to(fg)
+                                      (levels.get(r["station_code"]) or {}).get("unit", ""),
+                                      unsure=_week_unsure(r, xs)).add_to(fg)
                 # On the full-screen map the page around it cannot be seen, so
                 # the place's numbers ride on the map itself (shown only then).
                 fullscreen_panel(f"Flood forecast · {when}", _full_panel(
@@ -1958,6 +2115,9 @@ def render(shell, s, search_row) -> None:
             with gcol:
                 _gauge_detail(snap, levels, rivers_by, own)
 
+    from products.report import report_button
+    report_button(shell, sel, "fl_report")
+
     # ── folded away: the full table, reports, how to read ────────────────
     with st.expander("📋  All river gauges — table"):
         rows = []
@@ -1977,6 +2137,8 @@ def render(shell, s, search_row) -> None:
                                  if r.get("gauge_offline") and r.get("newest_reading_day")
                                  else "gauge offline"),
                 "Above now": "YES" if r["above_threshold_now"] else "",
+                "Note": ("high now — next days uncertain; small chances not relied on"
+                         if any(_unsure(r, d, v) for d, v in r["days"].items()) else ""),
             })
         st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True, height=360,
                      column_config={"Chance": st.column_config.ProgressColumn(
