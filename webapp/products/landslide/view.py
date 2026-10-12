@@ -122,6 +122,10 @@ def render(shell) -> None:
                     # were already rendered from pre-click state, so without
                     # this the highlight lags a click behind.
                     st.session_state.view = label
+                    # each page has its own map: without this, picking on
+                    # the new page the place last picked on the old one
+                    # left the new map where it opened
+                    st.session_state.pop("map_target", None)
                     st.rerun()
         view = st.session_state.view
 
@@ -181,16 +185,18 @@ def render(shell) -> None:
     def base_map():
         return M.base_map(grid, s)
 
-    def overlay_group(img=None, districts=False, marker=None, inventory=True, more=None):
+    def overlay_group(img=None, districts=False, marker=None, inventory=True, more=None,
+                      focus=None):
         """`more`: a function that adds the page's own layers after the
-        inventory (a district outline, a route, the full-screen panel)."""
+        inventory (a route, the full-screen panel). `focus`: the selected
+        district's outline, which then alone stays lit."""
         def extra(fg):
             if inventory:
                 inv_extra(fg)
             if more is not None:
                 more(fg)
         return M.overlay_group(grid, s, geo, img=img, districts=districts,
-                               marker=marker, extra=extra)
+                               marker=marker, extra=extra, focus=focus)
 
     def legend_strip(names, colors, shares=None, note=""):
         M.legend_strip(names, colors, shares, note, bare=s.bare)
@@ -617,11 +623,7 @@ def render(shell) -> None:
         if not sel:
             return None, 7, None, None
         if w["kind"] == "district":
-            pts = np.array([p for ring in G._rings(w["feat"]["geometry"]) for p in ring])
-            # np.ptp(), not ndarray.ptp() — the method was removed in NumPy 2.
-            span = max(float(np.ptp(pts[:, 0])), float(np.ptp(pts[:, 1])), 0.05)
-            centre = (float(pts[:, 1].mean()), float(pts[:, 0].mean()))
-            zoom = float(np.clip(np.log2(360.0 / span) - 1.6, 6, 11))
+            centre, zoom = M.focus_view(w["feat"])
             # the outline says where it is; a pin adds nothing
             return centre, zoom, None, w["mask"]
         return ((sel["lat"], sel["lon"]), zoom_place,
@@ -982,18 +984,14 @@ def render(shell) -> None:
                     m = base_map()
 
                     def _more(fg):
-                        if w["kind"] == "district":
-                            folium.GeoJson(w["feat"], name="Selected district",
-                                           style_function=lambda _: {
-                                               "color": T.ACCENT, "weight": 2.6,
-                                               "fill": False, "opacity": .95}).add_to(fg)
                         # on the full-screen map the page around it cannot be
                         # seen: the place box and the colour key ride on the map
                         U.fullscreen_panel(map_name, panel.body(colour_key(
                             "sl_outlook", T.CLASS_NAMES, T.CLASS_COLORS, shares))).add_to(fg)
 
-                    fg = overlay_group(img, districts=s.districts, marker=marker, more=_more)
-                    fly_c, fly_z = M.fly_to(sel, zoom)
+                    fg = overlay_group(img, districts=s.districts, marker=marker, more=_more,
+                                       focus=w.get("feat"))
+                    fly_c, fly_z = M.fly_to(sel, zoom, centre)
                     with shell_box:
                         # ⚠️ Stable key. Keying on the day or the place would
                         # rebuild the component on every change, which is
@@ -1064,17 +1062,6 @@ def render(shell) -> None:
                                if ROADS else "Which stretches, and how many kilometres.")
                             + "</div>", unsafe_allow_html=True)
                 to_view("Roads", "🛣️  Open road exposure", "sl_to_roads")
-
-        # ── where the visitor is ─────────────────────────────────────────────
-        if shell.loc.geo_state == "ok" and shell.loc.user_pt and not shell.loc.user_inside:
-            st.info(f"You appear to be at {shell.loc.user_pt[0]:.2f}°N, "
-                    f"{shell.loc.user_pt[1]:.2f}°E — **outside Arunachal "
-                    "Pradesh**. This forecast covers Arunachal only, so nothing "
-                    "has been selected. Search a place above, or click anywhere "
-                    "on the map.")
-        elif shell.loc.geo_state == "denied":
-            st.caption("Location sharing was declined. Search a place above, click "
-                       "the map, or press 📍 to try again.")
 
         # ── the place's week, in full ────────────────────────────────────────
         day_lbl = [datetime.fromisoformat(days[i]).strftime("%a %d %b") for i in fut]
@@ -1742,17 +1729,13 @@ def render(shell) -> None:
                 m = base_map()
 
                 def _more(fg):
-                    if w["kind"] == "district":
-                        folium.GeoJson(w["feat"], name="Selected district",
-                                       style_function=lambda _: {
-                                           "color": T.ACCENT, "weight": 2.6,
-                                           "fill": False, "opacity": .95}).add_to(fg)
                     U.fullscreen_panel(map_name, panel.body(colour_key(
                         "sl_ground", T.CLASS_NAMES, T.CLASS_COLORS, shares))).add_to(fg)
 
                 fg = overlay_group(None if s.bare else M.rgba_overlay(shown, T.CLASS_COLORS),
-                                   districts=s.districts, marker=marker, more=_more)
-                fly_c, fly_z = M.fly_to(sel, zoom)
+                                   districts=s.districts, marker=marker, more=_more,
+                                   focus=w.get("feat"))
+                fly_c, fly_z = M.fly_to(sel, zoom, centre)
                 with shell_box:
                     out = st_folium(m, height=MAP_H, use_container_width=True,
                                     pixelated=True, returned_objects=["last_clicked"],

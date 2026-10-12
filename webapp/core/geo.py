@@ -7,13 +7,13 @@ Two jobs:
    This replaces the old "Jump to" dropdown, which only browsed towns and had
    no way to reach a specific coordinate.
 
-2. Ask the browser where the user is, so the Forecast page opens on their own
-   location instead of a statewide average nobody lives at.
+2. Say whether a position the browser gave is inside the forecast area.
 
 ⚠️ Geolocation is deliberately NOT a Python dependency. The browser owns the
-answer, so the request runs as a tiny script that writes the result into the
-page's query string and reloads. That keeps the deploy at seven pure-Python
-packages, which is what lets it run on a free host.
+answer, so the request runs as a tiny component of our own
+(core/geo_component, mounted by core/location.py) that hands the result back
+as its value. That keeps the deploy at seven pure-Python packages, which is
+what lets it run on a free host.
 """
 from __future__ import annotations
 
@@ -201,39 +201,6 @@ def nearest_place(lat: float, lon: float, places: list[dict], kind="town"):
     if best is None:
         return None, None
     return best, (bd ** 0.5) * 111.0
-
-
-# ── browser geolocation ──────────────────────────────────────────────────────
-# The script writes into the PARENT page's query string, which Streamlit reads
-# back as st.query_params. `replace` rather than `assign` so the permission
-# round-trip does not stack up in the browser's back history.
-#
-# The `geo` flag is what stops an infinite loop: every outcome — success,
-# refusal, timeout, unsupported browser — writes it, so the app asks once per
-# session and never again unless the user presses the button.
-GEO_JS = """
-<script>
-(function () {
-  var top = window.parent;
-  function go(params) {
-    try {
-      var u = new URL(top.location.href);
-      Object.keys(params).forEach(function (k) { u.searchParams.set(k, params[k]); });
-      top.location.replace(u.toString());
-    } catch (e) {}
-  }
-  if (!navigator.geolocation) { go({geo: 'unsupported'}); return; }
-  navigator.geolocation.getCurrentPosition(
-    function (p) {
-      go({geo: 'ok',
-          lat: p.coords.latitude.toFixed(4),
-          lon: p.coords.longitude.toFixed(4)});
-    },
-    function (err) { go({geo: err.code === 1 ? 'denied' : 'failed'}); },
-    {enableHighAccuracy: false, timeout: 9000, maximumAge: 600000});
-})();
-</script>
-"""
 
 
 def in_area(lat: float, lon: float, g: dict, pad: float = 0.0) -> bool:

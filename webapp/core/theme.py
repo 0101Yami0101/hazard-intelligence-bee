@@ -51,7 +51,7 @@ BASEMAPS = {
                 '<a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'),
     "Satellite": ("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/"
                   "MapServer/tile/{z}/{y}/{x}",
-                  "Tiles &copy; Esri — Esri, Maxar, Earthstar Geographics"),
+                  "&copy; Esri, Maxar, Earthstar Geographics"),
 }
 # Place names, drawn over every basemap. Esri's gray-canvas reference layers,
 # not CARTO's `*_only_labels`: those ALSO turned out to carry the "API KEY
@@ -79,6 +79,12 @@ def _rgb(hexc: str, alpha: int = 210) -> list[int]:
 # deck.gl takes colours as RGBA arrays, not hex — same boundary ink, other units.
 EDGE_RGB = {k: _rgb(v) for k, v in BOUNDARY_INK.items()}
 
+# What a visitor sees before they pick anything: the satellite picture, one
+# step in from the whole state and looking at the capital's side of it. No
+# place is selected by this — the panels still describe all of Arunachal.
+BASEMAP_DEFAULT = "Satellite"
+MAP_OPEN_AT = (27.45, 93.75)     # a little north of Itanagar (27.08 N, 93.61 E)
+MAP_OPEN_ZOOM = 8
 MAP_MIN_ZOOM = 6
 MAP_H = 430          # compact map viewport, matching SlopeSense v1
 MAP_H_SM = 360
@@ -106,6 +112,11 @@ h1,h2,h3,h4,h5,h6,[data-testid="stMetricValue"]{
     var(--ink);
 }
 .block-container{padding-top:2.1rem; padding-bottom:3rem; max-width:1400px;}
+/* The component that asks the browser for a position (core/location.py)
+   draws nothing. Out of the flow, not display:none: a frame that is not
+   rendered may not be allowed to ask. */
+.st-key-geo_ask{position:absolute!important;width:1px!important;height:1px!important;
+  overflow:hidden!important;opacity:0;pointer-events:none;}
 
 /* Header is made invisible but NOT removed — it reserves the vertical space
    the content sits below. The sidebar's reopen button lives inside the

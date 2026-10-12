@@ -28,6 +28,7 @@ from branca.element import MacroElement
 from jinja2 import Template
 
 import core.geo as G
+from core.location import note as location_note
 
 # Rivers on the map: a stretch a gauge measures (its checked forecast
 # applies there) glows bright, warm once its chance is 2%+; every other river
@@ -240,7 +241,8 @@ FS_CSS = """
    one line. Narrower, the side panel drops under the map and lays its
    blocks side by side. The width is the row's own (a container query), so
    the sidebar opening or closing counts as well as the window. The map's
-   620 px is what the whole state needs at its starting zoom. */
+   620 px is what the whole state needs at zoom 7, one step out from where
+   it opens. */
 .st-key-fs_main{container-type:inline-size;container-name:fsmain;}
 [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] .st-key-fs_col_m){flex-wrap:nowrap;align-items:stretch;}
 [data-testid="stColumn"]:has(.st-key-fs_col_l){flex:1 1 296px!important;min-width:296px;}
@@ -518,6 +520,8 @@ def page_head(title: str, sub: str, icon: str = "◈", search_row=None, warn: bo
             sel = search_row()
     if warn and sel is None and st.session_state.get("search") not in (None, G.PROMPT):
         st.warning(f"Could not read **{st.session_state.search}** as a place or a coordinate.")
+    if warn and search_row is not None:
+        location_note(sel)
     return sel
 
 

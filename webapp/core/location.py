@@ -10,13 +10,27 @@ and the search widget lives inside a product page.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
 
 import core.geo as G
 from core.grid import Grid
+
+
+# The part that runs in the browser: it asks for the position and sends the
+# answer back as this component's value (geo_component/index.html).
+#
+# ⚠️ It replaced a script that wrote the answer into the page's address
+# (2026-10-12). Streamlit runs such a script in a sandboxed frame, and a
+# sandboxed frame is not allowed to change the address of the page around
+# it, so the answer never arrived and the 📍 button did nothing at all, in
+# every browser. A component's value needs no such permission.
+_ASK = components.declare_component(
+    "visitor_position", path=str(Path(__file__).parent / "geo_component"))
+_STATES = ("ok", "denied", "failed", "unsupported")
 
 
 @st.cache_data(show_spinner=False)
@@ -45,35 +59,59 @@ def resolve_visitor(grid: Grid, towns, districts) -> Locator:
     """Run the whole location handshake, once per rerun, before any widget.
 
     ⚠️ OPT-IN ONLY. The page never asks where you are on load — the request
-    fires solely when the 📍 button sets geo=ask. Asking unprompted throws a
-    browser permission prompt at a visitor who only wanted to look at a map,
-    and it made the app open on a personal location without anyone choosing it.
+    fires solely when the 📍 button is pressed (ask_again). Asking unprompted
+    throws a browser permission prompt at a visitor who only wanted to look
+    at a map, and it made the app open on a personal location without anyone
+    choosing it.
 
-    Every outcome — allowed, refused, timed out, unsupported — writes a `geo`
-    flag into the URL, and that flag is what stops the request repeating.
+    A press mounts one asking component. Every outcome — allowed, refused,
+    timed out, unsupported — comes back as its value, is kept in the session
+    and the component is not drawn again, so the browser is asked once per
+    press. note() tells the visitor what became of it.
     """
     places, place_idx = load_places(towns, districts)
 
-    qp = st.query_params
-    geo_state = qp.get("geo")
-    # The session flag is a second guard: if the browser blocks the iframe from
-    # navigating its parent, the `geo` flag never gets written, and without this
-    # the request would fire again on every single rerun.
-    if geo_state == "ask" and not st.session_state.get("geo_asked"):
-        st.session_state.geo_asked = True
-        components.html(G.GEO_JS, height=0)
-
+    ss = st.session_state
+    if ss.get("geo_pending"):
+        # Keyed by the press, so a second press asks afresh. The container
+        # is taken out of the page's flow (theme.py, .st-key-geo_ask): the
+        # component shows nothing, and left in the flow it pushed the whole
+        # page down a row while the browser was being asked.
+        with st.container(key="geo_ask"):
+            got = _ASK(key=f"geo_ask_{ss.get('geo_n', 0)}", default=None)
+        if isinstance(got, dict) and got.get("state") in _STATES:
+            ss.geo_answer = got
+            ss.geo_pending = False
+            st.rerun()          # draw the page without the asking component
+    ans = ss.get("geo_answer") or {}
+    geo_state = "ask" if ss.get("geo_pending") else ans.get("state")
     user_pt = None
-    if geo_state == "ok" and "lat" in qp and "lon" in qp:
+    if geo_state == "ok":
         try:
-            user_pt = (float(qp["lat"]), float(qp["lon"]))
-        except ValueError:
-            user_pt = None
+            user_pt = (float(ans["lat"]), float(ans["lon"]))
+        except (KeyError, TypeError, ValueError):
+            geo_state, user_pt = "failed", None
+    # A position (or a refusal) can still be given in the address, as
+    # ?geo=ok&lat=..&lon=.. — links and the screen checks use it. A press of
+    # the button always wins over it.
+    qp = st.query_params
+    if geo_state is None and qp.get("geo") in _STATES:
+        geo_state = qp["geo"]
+        if geo_state == "ok":
+            try:
+                user_pt = (float(qp["lat"]), float(qp["lon"]))
+            except (KeyError, ValueError):
+                geo_state, user_pt = None, None
     user_inside = bool(user_pt and G.in_area(user_pt[0], user_pt[1],
                                              {"west": grid.west, "east": grid.east,
                                               "south": grid.south, "north": grid.north}))
 
     me = _me_place(user_pt, user_inside, places)
+    # note() speaks only of what a press of the button brought back, or of a
+    # position: a refusal merely written in the address is nobody's refusal
+    pressed = bool(ss.get("geo_pending") or ans)
+    ss.geo_note = (geo_state if (pressed or geo_state == "ok") else None,
+                   user_pt, user_inside)
 
     # Nothing is selected until someone chooses. The forecast is about a place,
     # and picking one for the visitor — their own position or a default town —
@@ -130,8 +168,42 @@ def _me_place(user_pt, user_inside, places) -> dict | None:
 
 
 def ask_again() -> None:
-    """Clear both guards so a second press of 📍 asks again rather than
-    silently reusing the previous answer."""
-    st.query_params["geo"] = "ask"
-    for k in ("geo_asked", "geo_applied"):
-        st.session_state.pop(k, None)
+    """A press of 📍: ask the browser, afresh, on the next run. The last
+    answer is dropped so a second press does not silently reuse it."""
+    ss = st.session_state
+    ss.geo_n = ss.get("geo_n", 0) + 1
+    ss.geo_pending = True
+    for k in ("geo_answer", "geo_applied"):
+        ss.pop(k, None)
+    for k in ("geo", "lat", "lon"):
+        if k in st.query_params:
+            del st.query_params[k]
+
+
+def note(sel) -> None:
+    """What became of a press on 📍, said under the search row.
+
+    Until 2026-10-12 only one page said anything, far down it, and only for
+    two of the outcomes — so a refusal, a timeout or a position outside the
+    state all looked the same as a button that does nothing.
+    """
+    state, pt, inside = st.session_state.get("geo_note") or (None, None, False)
+    if state == "ask":
+        st.info("Waiting for your browser to share your location. If it asks, choose "
+                "**Allow**.")
+    elif sel is not None or state is None:
+        return
+    elif state == "ok" and pt and not inside:
+        st.info(f"You appear to be at {pt[0]:.2f}°N, {pt[1]:.2f}°E, **outside Arunachal "
+                "Pradesh**. This forecast covers Arunachal only, so nothing has been "
+                "selected. Search a place above, or click anywhere on the map.")
+    elif state == "denied":
+        st.warning("Your browser did not allow this site to see your location. Allow "
+                   "location for this site (the icon beside the address), then press 📍 "
+                   "again. Or search a place above, or click the map.")
+    elif state == "failed":
+        st.warning("Your browser could not work out where you are. Press 📍 to try again, "
+                   "search a place above, or click the map.")
+    elif state == "unsupported":
+        st.warning("This browser cannot share a location. Search a place above, or click "
+                   "the map.")

@@ -59,6 +59,7 @@ from streamlit_folium import st_folium
 import core.geo as G
 import core.mapping as M
 import core.theme as T
+from core.location import note as location_note
 from products.flood.data import DIR
 # the look every FloodSense page shares (badges, tiles, the stylesheet, the
 # river layer) lives in ui.py since 2026-09-29
@@ -1753,6 +1754,7 @@ def render(shell, s, search_row) -> None:
                                      "screen.")
     if sel is None and st.session_state.get("search") not in (None, G.PROMPT):
         st.warning(f"Could not read **{st.session_state.search}** as a place or a coordinate.")
+    location_note(sel)
     if local and age > 0:
         st.info(f"Today's forecast hasn't been run yet — this one is from {issued:%d %b}. "
                 "Run it now, or it runs by itself at 08:30.")
@@ -1882,6 +1884,9 @@ def render(shell, s, search_row) -> None:
             box = st.container(height=MAP_H + 8, border=False, key="map_shell")
             m = M.base_map(grid, s)
             marker = (sel["lat"], sel["lon"], sel["label"]) if sel else None
+            # a district is outlined and lit alone; the pin marks its centre,
+            # which is the spot the panel's numbers are read at
+            focus = M.district_feature(geo, sel)
 
             img = None
             b0 = _catchment_of(pl) if (sel and show_catch) else None
@@ -1916,11 +1921,18 @@ def render(shell, s, search_row) -> None:
                 else:
                     labels = [(h["name"], h["lat"], h["lon"], h["p"]) for h in hot[:6]]
             # Labels never overlap: each one's box is measured in screen
-            # pixels at the zoom it opens at (7 for the state, ~1 px per km;
-            # 11 on a place, ~15 px per km) and dropped if it would touch one
+            # pixels (zoom 7 for the state, ~1 px per km; 11 on a place,
+            # ~15 px per km) and dropped if it would touch one
             # already placed. Gauge labels go first — they are the checked
             # numbers — the own gauge and any river above its line first.
+            # The map opens at zoom 8 (theme.MAP_OPEN_ZOOM) but the state is
+            # still measured at 7: one step out shows all of Arunachal, and
+            # labels spaced for 8 would pile up there.
             ppk = 15.0 if sel else 0.93
+            if focus:
+                # a district opens further out than a town: space its labels
+                # for the zoom it is framed at (the scale doubles per step)
+                ppk = 0.93 * 2 ** (M.focus_view(focus)[1] - 7)
             boxes: list[tuple] = []
 
             def _fits(lat, lon, text) -> bool:
@@ -1989,8 +2001,10 @@ def render(shell, s, search_row) -> None:
 
             # the shared rivers layer stays off: this map draws its own
             fg = M.overlay_group(grid, replace(s, rivers=False), geo, img=img,
-                                 districts=s.districts, marker=marker, extra=_extras)
-            fly_c, fly_z = M.fly_to(sel, 11)
+                                 districts=s.districts, marker=marker, extra=_extras,
+                                 focus=focus)
+            fly_c, fly_z = (M.fly_to(sel, *M.focus_view(focus)[::-1]) if focus
+                            else M.fly_to(sel, 11))
             with box:
                 out = st_folium(m, height=MAP_H, use_container_width=True,
                                 pixelated=True,

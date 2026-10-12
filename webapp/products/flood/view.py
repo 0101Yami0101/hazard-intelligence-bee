@@ -31,6 +31,7 @@ from streamlit_folium import st_folium
 import core.geo as G
 import core.mapping as M
 import core.rainfall as RN
+import core.theme as T
 import products.flood.model as fm
 from core.bundle import load_rain_spine
 from core.location import ask_again
@@ -362,6 +363,9 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                               layers=[("fp_lyr_rivers", "Rivers", True)])
             box = st.container(height=U.MAP_H + 8, border=False, key="map_shell")
             m = M.base_map(grid, s)
+            # a district is outlined and lit alone; the pin marks its centre,
+            # which is the spot the panel's numbers are read at
+            focus = M.district_feature(geo, sel)
 
             shown = wcls > 0
             shares = [float((wcls[shown] == i).mean()) if shown.any() else 0
@@ -383,8 +387,10 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                 grid, replace(s, rivers=False), geo,
                 img=None if s.bare else M.rgba_overlay(wcls, WHERE_COLORS),
                 districts=s.districts,
-                marker=(sel["lat"], sel["lon"], sel["label"]) if sel else None, extra=_extras)
-            fly_c, fly_z = M.fly_to(sel, 11)
+                marker=(sel["lat"], sel["lon"], sel["label"]) if sel else None, extra=_extras,
+                focus=focus)
+            fly_c, fly_z = (M.fly_to(sel, *M.focus_view(focus)[::-1]) if focus
+                            else M.fly_to(sel, 11))
             with box:
                 out = st_folium(m, height=U.MAP_H, use_container_width=True, pixelated=True,
                                 returned_objects=["last_clicked"], feature_group_to_add=fg,
@@ -398,7 +404,9 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                     tip="If a flood is reported within about 5 km, the chance water reaches each "
                         "spot. Blank: under 2%. Each ~550 m square shows its highest 100 m "
                         "spot. The share is of the ground coloured. No rain in this map.",
-                    syms=U.sym("line", "river, by size")), unsafe_allow_html=True)
+                    syms=U.sym("line", "river, by size")
+                    + (U.sym("box", "selected district", T.ACCENT) if focus else "")),
+                    unsafe_allow_html=True)
 
     # ── right: ground by level, what it reads, the forecast ───────────────
     with cr, st.container(key="fs_col_r"):
@@ -624,6 +632,9 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                                       ("fc_lyr_catch", "Area draining to the place", True)])
             box = st.container(height=U.MAP_H + 8, border=False, key="map_shell")
             m = M.base_map(grid, s)
+            # a district is outlined and lit alone; the pin marks its centre,
+            # which is the spot the panel's numbers are read at
+            focus = M.district_feature(geo, sel)
             img = None
             if not s.bare and PCT is not None:
                 wr = np.zeros(bid.shape, np.uint8)
@@ -655,8 +666,9 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
             fg = M.overlay_group(grid, replace(s, rivers=False), geo, img=img,
                                  districts=s.districts,
                                  marker=(sel["lat"], sel["lon"], sel["label"]) if sel else None,
-                                 extra=_extras)
-            fly_c, fly_z = M.fly_to(sel, 10)
+                                 extra=_extras, focus=focus)
+            fly_c, fly_z = (M.fly_to(sel, *M.focus_view(focus)[::-1]) if focus
+                            else M.fly_to(sel, 10))
             with box:
                 out = st_folium(m, height=U.MAP_H, use_container_width=True, pixelated=True,
                                 returned_objects=["last_clicked"], feature_group_to_add=fg,
@@ -671,6 +683,7 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                         "catchment — not millimetres, not a river level, and not a flood chance. "
                         "The share is of the 1,680 catchments.",
                     syms=U.sym("line", "river, by size")
+                    + (U.sym("box", "selected district", T.ACCENT) if focus else "")
                     + (U.sym("box", "drains to the place", "#ffd666")
                        if b0 is not None and lay.get("fc_lyr_catch") else "")),
                     unsafe_allow_html=True)

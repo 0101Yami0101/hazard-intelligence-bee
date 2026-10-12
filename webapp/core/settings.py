@@ -46,7 +46,8 @@ def map_settings(*, roads_help: str = "Major roads.",
     """
     st.markdown("<div class='side-label'>Map settings</div>",
                 unsafe_allow_html=True)
-    basemap = st.radio("Basemap", list(T.BASEMAPS), horizontal=True, index=0,
+    basemap = st.radio("Basemap", list(T.BASEMAPS), horizontal=True,
+                       index=list(T.BASEMAPS).index(T.BASEMAP_DEFAULT),
                        label_visibility="collapsed", key="set_basemap")
     bare = st.toggle("🧭 Bare map", value=False, key="set_bare",
                      help="Hide every data layer — just the basemap.")
