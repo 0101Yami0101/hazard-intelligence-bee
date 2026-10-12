@@ -1704,7 +1704,7 @@ def _report_form(sel, grid) -> None:
 # ── the page ─────────────────────────────────────────────────────────────────
 def render(shell, s, search_row) -> None:
     """`search_row` is the flood module's place picker (view.py) — the same
-    session key SlopeSense uses, so a place picked in one module is still
+    session key SlideSense uses, so a place picked in one module is still
     selected in the other."""
     grid, geo = shell.grid, shell.geo
     st.markdown(FS_CSS, unsafe_allow_html=True)

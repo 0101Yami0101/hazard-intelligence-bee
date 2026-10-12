@@ -5,7 +5,7 @@ Two kinds, and the split is the whole point of the layout:
   assets/base/       geography every product needs — the grid, the state
                      outline, districts, elevation, rivers, roads, the
                      settlement gazetteer. Loaded once, shared by all.
-  assets/<product>/  one product's own model output. SlopeSense keeps its
+  assets/<product>/  one product's own model output. SlideSense keeps its
                      susceptibility surface here; FloodSense will keep its
                      own beside it, on the same grid.
 
@@ -78,7 +78,7 @@ def load_rain_spine():
     """The rainfall query points (219 since 2026-09-22) and their climatology.
 
     ⚠️ SHARED, not landslide-only. Both hazards are driven by the same rain:
-    SlopeSense asks how unusual it is on a slope, FloodSense asks how much of
+    SlideSense asks how unusual it is on a slope, FloodSense asks how much of
     it is falling in a catchment upstream. One set of points and one set of
     percentile breakpoints keeps the two answers consistent — and stops the
     flood module importing from the landslide one.

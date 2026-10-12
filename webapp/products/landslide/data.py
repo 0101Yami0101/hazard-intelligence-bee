@@ -1,4 +1,4 @@
-"""SlopeSense's own bundle — the half of the data that is about landslides.
+"""SlideSense's own bundle — the half of the data that is about landslides.
 
 Everything here is model output or landslide evidence. The grid, boundary,
 districts, elevation, rivers, roads and gazetteer are NOT here: they are
@@ -47,4 +47,4 @@ def load_times_usual() -> dict | None:
 
 
 # load_forecast now lives in core.rainfall — one cached fetch serves every
-# module, so opening FloodSense after SlopeSense costs no extra API call.
+# module, so opening FloodSense after SlideSense costs no extra API call.

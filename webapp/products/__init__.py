@@ -32,7 +32,7 @@ class Product:
     status: str        # "live" | "building" | "foundation"
     kind: str = "product"   # "product" cards lead, "foundation" sits beneath
     # The session-state key the module's OWN sidebar loop reads/writes for its
-    # current tab. Each module picked its own name historically (SlopeSense:
+    # current tab. Each module picked its own name historically (SlideSense:
     # "view", FloodSense: "fl_view", Data Backbone: "bb_view") — this is what
     # lets the shared popover below write to the right one.
     nav_key: str = "view"
@@ -55,7 +55,7 @@ class Product:
 REGISTRY: list[Product] = [
     Product(
         slug="landslide",
-        name="SlopeSense",
+        name="SlideSense",
         hazard="Landslides",
         icon="◭",
         tagline="7-day landslide outlook · statewide",

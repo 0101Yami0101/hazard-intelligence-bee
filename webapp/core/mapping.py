@@ -95,7 +95,7 @@ def overlay_group(grid: Grid, s: MapSettings, geo: BaseLayers, img=None,
     extras, marker.
 
     `extra` is a callable taking the feature group. That is the seam where a
-    product adds what only it has — SlopeSense drops its landslide inventory
+    product adds what only it has — SlideSense drops its landslide inventory
     in there — without this function growing a branch per hazard.
     """
     fg = folium.FeatureGroup(name="layers")

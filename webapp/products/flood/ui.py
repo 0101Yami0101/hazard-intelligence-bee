@@ -1,5 +1,5 @@
 """The shared dashboard look — the pieces every FloodSense page, and since
-2026-10-10 every SlopeSense page, is built from.
+2026-10-10 every SlideSense page, is built from.
 
 Split out of live.py on 2026-09-29, when the Flood-prone ground and
 Catchments pages were made over in the forecast page's dashboard style
@@ -13,7 +13,7 @@ number it is (forecast, outlook, estimate, measured, input, record).
 
 It still lives in the flood folder because that is where it was written;
 nothing in it is about floods except the wording of TIERS and the river
-layer. SlopeSense's kinds of number are SLOPE_TIERS below.
+layer. SlideSense's kinds of number are SLOPE_TIERS below.
 """
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ TIERS = {
                "gauge crossing its line). History, not a forecast."),
 }
 
-# SlopeSense's kinds of number. Same glyphs, colours and borders as the flood
+# SlideSense's kinds of number. Same glyphs, colours and borders as the flood
 # ones they sit beside in the same app, so a badge means the same kind of
 # thing in both modules — but its own words: a landslide level is a rank,
 # and nothing on that screen is a chance.

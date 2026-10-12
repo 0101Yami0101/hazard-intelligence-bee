@@ -1,4 +1,8 @@
-"""BeeDigital hazard platform — Arunachal Pradesh.
+"""SlopeSense, the hazard intelligence platform — Arunachal Pradesh.
+
+Names since 2026-10-11: the PLATFORM is SlopeSense (Hazard Intelligence
+Platform). Its landslide module is SlideSense — the one that was called
+SlopeSense before, as the first, separate app still is.
 
 This file is the SHELL and nothing else: page setup, the landing page, and the
 router that hands control to one module. It contains no hazard maths, no map
@@ -31,6 +35,7 @@ if str(_HERE) not in sys.path:
 
 import streamlit as st
 
+import core.landing as LP
 import core.splash as splash
 import core.theme as T
 import products as P
@@ -38,7 +43,7 @@ from core.bundle import load_base, load_elevation
 from core.location import resolve_visitor
 from core.shell import Shell
 
-st.set_page_config(page_title="BeeDigital Hazard Platform · Arunachal Pradesh",
+st.set_page_config(page_title="SlopeSense · Hazard Intelligence Platform · Arunachal Pradesh",
                    page_icon="◎", layout="wide",
                    initial_sidebar_state="expanded",
                    menu_items={"About": "Landslide and flood forecasting for "
@@ -54,7 +59,7 @@ st.markdown(
 
 # ─────────────────────────── routing ─────────────────────────────────────────
 # The active module lives in the URL, not just in session state, so a link to
-# SlopeSense stays a link to SlopeSense — and the browser back button walks
+# SlideSense stays a link to SlideSense — and the browser back button walks
 # between modules the way a visitor expects it to.
 def _open(slug: str | None) -> None:
     """Switch module. Runs as the button's on_click callback — BEFORE the
@@ -95,11 +100,11 @@ product = P.get(st.session_state.get("module"))
 
 
 # ─────────────────────────── landing ─────────────────────────────────────────
-# Compact and single-screen ON PURPOSE. This used to be a scrolling hero with
-# a paragraph per module — the platform's whole pitch is "one pipeline, easy
-# to extend", and a page a visitor has to scroll to read undercuts that in
-# about four seconds. What is on screen is what a person picks a module from;
-# everything else lives inside the module itself.
+# The FIRST SCREEN is compact on purpose: the platform's name and the module
+# tiles, so picking a module never needs a scroll. Since 2026-10-12 the idea
+# behind the platform is told BELOW that screen, in five parts that follow the
+# presenter's script word for word, so the page can be presented from — see
+# core/landing.py. Nobody who only wants a forecast has to read any of it.
 def _tile(p: P.Product) -> None:
     """One compact module tile — icon, name, one line, status. No blurb.
 
@@ -152,11 +157,16 @@ if product is None:
     # narrows the block off the page's full 1400px width AND centres it
     # vertically in the viewport, since the content is short enough that a
     # left-and-top-hugging block reads as unfinished rather than compact.
+    st.markdown(LP.CSS, unsafe_allow_html=True)
+    st.markdown(LP.shots_css(), unsafe_allow_html=True)
+    st.markdown(LP.nav(), unsafe_allow_html=True)
     with st.container(border=False, key="land_wrap"):
         st.markdown(
-            "<div class='land-head'><div class='land-logo'>◎</div>"
-            "<div class='land-title'>Hazard Intelligence Platform"
-            "<span>Arunachal Pradesh</span></div></div>", unsafe_allow_html=True)
+            "<div class='land-head' id='lp-top'><div class='land-logo'>◎</div>"
+            "<div class='land-title'>SLOPESENSE"
+            "<span>Hazard Intelligence Platform</span>"
+            "<small>Arunachal Pradesh</small></div></div>" + LP.hero_lede(),
+            unsafe_allow_html=True)
 
         mains = [p for p in P.REGISTRY if p.kind == "product"]
         # Own key, distinct from land_wrap, purely so the entry-animation CSS
@@ -191,6 +201,38 @@ if product is None:
                 with bc2:
                     st.button("Open →", key=f"go_{bone.slug}", width="stretch",
                               on_click=_open, args=(bone.slug,))
+        st.markdown(LP.hero_cue(), unsafe_allow_html=True)
+
+    # ── the story, below the first screen ────────────────────────────────────
+    # Pure HTML from core/landing.py, except where a real button is needed:
+    # each product's "Open", and the Data Backbone's. Those sit in containers
+    # keyed "tile_story_*" so the click-to-cover splash (core/splash.py) finds
+    # the module's name and colour the same way it does on the tiles above.
+    with st.container(border=False, key="land_story"):
+        st.markdown(LP.problem(), unsafe_allow_html=True)
+        st.markdown(LP.idea(), unsafe_allow_html=True)
+        st.markdown(LP.how(), unsafe_allow_html=True)
+        if bones:
+            with st.container(border=False, key=f"tile_story_{bones[0].slug}"):
+                sc1, sc2 = st.columns([5, 1.1], vertical_alignment="center")
+                with sc1:
+                    st.markdown(LP.backbone_card(bones[0].accent), unsafe_allow_html=True)
+                with sc2:
+                    st.button("Open →", key=f"go2_{bones[0].slug}", width="stretch",
+                              on_click=_open, args=(bones[0].slug,))
+        st.markdown(LP.today_head(), unsafe_allow_html=True)
+        shown = [p for p in mains if p.slug in LP.PRODUCTS]
+        for col, p in zip(st.columns(max(len(shown), 1), gap="medium"), shown):
+            with col:
+                with st.container(border=False, key=f"tile_story_{p.slug}"):
+                    st.markdown(LP.product_card(p.slug, p.name, p.accent),
+                                unsafe_allow_html=True)
+                    st.button(f"Open {p.name} →", key=f"go2_{p.slug}", width="stretch",
+                              type="primary" if p.available else "secondary",
+                              disabled=not p.available, on_click=_open, args=(p.slug,))
+        st.markdown(LP.saving(), unsafe_allow_html=True)
+        st.markdown(LP.more(), unsafe_allow_html=True)
+        st.markdown(LP.nxt(), unsafe_allow_html=True)
 
     # Take down whichever overlay got this render here — cold_start() above,
     # or arm_home() from inside a module — and restart the entry animation

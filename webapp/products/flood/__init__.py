@@ -1,6 +1,6 @@
 """FloodSense — the flood module.
 
-Deliberately the SAME two-part shape as SlopeSense, because the physics splits
+Deliberately the SAME two-part shape as SlideSense, because the physics splits
 the same way:
 
     flood risk = where water collects (terrain, static)

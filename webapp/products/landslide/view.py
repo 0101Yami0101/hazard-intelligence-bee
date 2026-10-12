@@ -1,4 +1,4 @@
-"""SlopeSense pages.
+"""SlideSense pages.
 
 Everything lives inside render() on purpose. The page needs about twenty
 values that are fixed for one rerun — the grid, the bundle, the sidebar
@@ -11,7 +11,7 @@ the same shared pieces (products/flood/ui.py): a header with the place
 search, a row of tiles, then place | map | side panel, every number wearing
 the badge of what kind of number it is. The maths did not change; district
 figures did — they are now taken over each district's real outline
-(GR.district_raster), not the box around it. docs/design/SLOPESENSE_SCREEN.md.
+(GR.district_raster), not the box around it. docs/design/SLIDESENSE_SCREEN.md.
 """
 from __future__ import annotations
 
@@ -65,7 +65,10 @@ ROUTE_CORRIDOR_KM = 4.0   # one route needs less context than the whole net
 # from the shared ℹ️ popover instead (see Product.extra_nav in
 # products/__init__.py), which sets st.session_state.view to one of their
 # labels directly, so the render logic below needed no change at all.
-VIEWS = [("📍", "Forecast"), ("🛣️", "Roads"), ("🗺️", "Susceptibility")]
+# The forecast is listed LAST in the side menu (the user, 2026-10-12), but it
+# is still the page the module opens on: HOME, not VIEWS[0].
+VIEWS = [("🛣️", "Roads"), ("🗺️", "Susceptibility"), ("📍", "Forecast")]
+HOME = "Forecast"
 
 MAP_H = U.MAP_H
 # The cuts the susceptibility map is drawn with, and the hazard score at
@@ -102,7 +105,7 @@ def render(shell) -> None:
 
     # ─────────────────────── sidebar ─────────────────────────────────────────
     if "view" not in st.session_state:
-        st.session_state.view = VIEWS[0][1]
+        st.session_state.view = HOME
 
     # Derived, never typed in. An earlier build hardcoded "37,788" in three
     # places; when the inventory was clipped to the state the app kept quoting
@@ -1136,7 +1139,7 @@ def render(shell) -> None:
                              "High+ %", min_value=0, max_value=100, format="%.1f%%")})
             st.download_button("⬇️  District outlook (CSV)",
                                dtab.to_csv(index=False).encode(),
-                               f"slopesense_{days[di]}.csv", "text/csv")
+                               f"slidesense_{days[di]}.csv", "text/csv")
             st.caption("Each district's figures are for the land the model scores inside "
                        "its own outline.")
 
@@ -1986,6 +1989,6 @@ def render(shell) -> None:
                 "- **Live forecast** — Open-Meteo (free tier)\n"
                 "- **Dated events** — NASA Global Landslide Catalog")
 
-    st.markdown("<div class='app-footer'><b>SlopeSense Forecast</b>"
+    st.markdown("<div class='app-footer'><b>SlideSense Forecast</b>"
                 "<span>Hazard = susceptibility × rainfall trigger</span></div>",
                 unsafe_allow_html=True)

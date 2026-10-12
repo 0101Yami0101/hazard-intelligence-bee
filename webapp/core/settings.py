@@ -6,7 +6,7 @@ sidebars is how the look drifts apart, and it is also how a visitor loses
 their basemap choice by clicking between them.
 
 Explicit widget keys on purpose: they are what carries a visitor's chosen
-basemap from SlopeSense to FloodSense instead of resetting it at the door.
+basemap from SlideSense to FloodSense instead of resetting it at the door.
 """
 from __future__ import annotations
 

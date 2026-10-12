@@ -46,7 +46,7 @@ def _e(s) -> str:
 
 
 def _pc(x: float) -> str:
-    """A share of land, as the SlopeSense pages write it."""
+    """A share of land, as the SlideSense pages write it."""
     if 0 < x < 0.0005:
         return "<0.1%"
     return f"{100 * x:.1f}%" if x < 0.0995 else f"{100 * x:.0f}%"
@@ -67,7 +67,7 @@ def kind_of(sel) -> str:
 
 # ═════════════════════ landslides ════════════════════════════════════════
 def landslide(shell, sel) -> dict:
-    """SlopeSense's facts for the selection. {"error": ...} when live rain
+    """SlideSense's facts for the selection. {"error": ...} when live rain
     cannot be read."""
     import products.landslide.model as fc
     from products.landslide.data import load_model
@@ -457,7 +457,7 @@ def build(shell, sel, now: datetime | None = None) -> str:
     # ── landslides ──
     h = ("<div class='sec'><div class='sec-h'><span class='sec-t'>Landslide outlook</span>"
          "<span class='tag'>≈ a rank, not a chance</span>"
-         "<span class='sec-n'>SlopeSense · worked out from rain read "
+         "<span class='sec-n'>SlideSense · worked out from rain read "
          f"{now:%d %b %H:%M}</span></div>")
     if ls.get("error"):
         h += f"<div class='note'>{_e(ls['error'])}</div>"
@@ -533,7 +533,7 @@ def build(shell, sel, now: datetime | None = None) -> str:
         f"report</div><h1>{_e(title)}</h1><div class='sub'>{_e(sub)}</div></div>"
         f"<div class='meta'>Made <b>{now:%d %b %Y, %H:%M}</b><br>Covers the next 7 days</div></div>"
         + "".join(body) + read +
-        "<div class='foot'><span>BEE Solutions · SlopeSense and FloodSense · Arunachal Pradesh"
+        "<div class='foot'><span>BEE Solutions · SlopeSense · SlideSense and FloodSense · Arunachal Pradesh"
         "</span><span>Forecasts are written down each morning; river forecasts are graded daily."
         "</span>"
         "</div></div></body></html>")

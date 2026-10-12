@@ -11,15 +11,17 @@ One deployment, several modules behind a landing page.
 webapp/
   app.py          the shell — landing page and router, no hazard logic
   core/           the shared spine: grid, geography, maps, search, terrain, 3D
+                  (and landing.py: the story told under the home page's tiles)
   products/       one folder per module, plus the registry that lists them
-    landslide/      SlopeSense — live
+    landslide/      SlideSense — live
     flood/          FloodSense — live (static layer unvalidated)
     backbone/       Data Backbone — catalogue + pipeline view
   assets/
     base/           shared geography + the rainfall spine     (2.14 MB)
-    landslide/      SlopeSense model output                   (1.59 MB)
+    landslide/      SlideSense model output                   (1.59 MB)
     flood/          FloodSense layers, gauges, daily forecast (1.43 MB)
     backbone/       catalogue, statistics, previews           (0.17 MB)
+    landing/        two module pictures for the home page     (0.08 MB)
 ```
 
 `backbone/` summarises **308 GB** of licensed source data in 0.17 MB and
@@ -140,7 +142,7 @@ streamlit run webapp/app.py
 | Constraint | This app |
 |---|---|
 | Repo size | ~37.7 MB (data excluded) |
-| Bundle the app loads | **5.33 MB** (2.14 shared + 1.59 SlopeSense + 1.43 FloodSense + 0.17 Backbone) |
+| Bundle the app loads | **5.33 MB** (2.14 shared + 1.59 SlideSense + 1.43 FloodSense + 0.17 Backbone) |
 | Memory | well under 1 GB — a few small arrays |
 | Build time | ~2 min, 5 slim dependencies |
 | API keys | none — Open-Meteo is keyless |

@@ -216,7 +216,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]{
 }
 /* ⚠️ min-height, not height. Measured on every page that uses st.metric(): a
    card with a delta line is 110px tall, one without is 85px — the SAME
-   defect on SlopeSense, FloodSense and Data Backbone, any time a row mixes
+   defect on SlideSense, FloodSense and Data Backbone, any time a row mixes
    metrics that carry a delta with ones that don't. min-height fixes the row
    without clipping a metric that ever needs more room than this. Width is
    NOT hardcoded here: st.columns() already gives every metric in a row an
@@ -450,8 +450,12 @@ div[data-testid="stExpander"] > details{
   background:color-mix(in srgb,var(--accent) 14%,transparent);
   border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
   flex-shrink:0;}
-.land-title{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:700;
-  letter-spacing:-.02em;color:var(--txt);line-height:1.15;}
+/* The platform's name in capitals, what it is under it (2026-10-11). */
+.land-title{font-family:'Sora',sans-serif;font-size:1.75rem;font-weight:800;
+  letter-spacing:.07em;color:var(--txt);line-height:1.1;}
+.land-title small{display:block;font-family:'Inter',sans-serif;
+  font-size:.6rem;font-weight:600;letter-spacing:.16em;color:var(--mut);
+  opacity:.72;text-transform:uppercase;margin-top:2px;}
 .land-title span{display:block;font-family:'Inter',sans-serif;
   font-size:.68rem;font-weight:700;letter-spacing:.16em;color:var(--mut);
   text-transform:uppercase;margin-top:2px;}

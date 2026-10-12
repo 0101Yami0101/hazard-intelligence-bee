@@ -6,7 +6,7 @@
     Catchments           an INPUT: how unusual the rain upstream of each
                          catchment is, not a forecast
 
-Same structure as SlopeSense, and for the same reason: the product is the
+Same structure as SlideSense, and for the same reason: the product is the
 FORECAST, and a forecast is only useful somewhere. The other two screens
 explain its inputs; neither may contradict it (2026-09-27: the flood-prone
 screen still showed the old rule-based index, and the catchments screen the
@@ -47,7 +47,11 @@ from core.settings import map_settings
 # 2026-09-25 — two forecasts that could disagree, with the weaker one the more
 # usable, only confused things. Flood-prone ground and Catchments stay: they
 # explain the inputs rather than compete with the forecast.
-VIEWS = [("🎯", "Live forecast"), ("🗺️", "Flood-prone ground"), ("💧", "Catchments")]
+# The forecast is listed LAST in the side menu (the user, 2026-10-12), but it
+# is still the page the module opens on, and where "Open the flood forecast"
+# and the retired screens lead: HOME, not VIEWS[0].
+VIEWS = [("🗺️", "Flood-prone ground"), ("💧", "Catchments"), ("🎯", "Live forecast")]
+HOME = "Live forecast"
 # Reached from the ℹ️ popover (products/__init__.py extra_nav), not the sidebar.
 METHOD_VIEW = "How to read this forecast"
 # Catchments to watch: as many as fit beside the map without the side panel
@@ -185,7 +189,7 @@ def _day_buttons(prefix: str, names: list[str], vals: list[str], colors: list[st
 
 def _to_forecast() -> None:
     if st.button("🎯  Open the flood forecast", key="fs_to_forecast", width="stretch"):
-        st.session_state.fl_view = VIEWS[0][1]
+        st.session_state.fl_view = HOME
         st.session_state.pop("map_target", None)
         st.rerun()
 
@@ -781,13 +785,13 @@ def render(shell) -> None:
                and int(RAIN_PT.max()) < len(PTS["lat"]))
 
     if "fl_view" not in st.session_state:
-        st.session_state.fl_view = VIEWS[0][1]
+        st.session_state.fl_view = HOME
     elif st.session_state.fl_view == "Method & limits":
         # renamed 2026-09-27 — a session left on the old page lands on the new
         st.session_state.fl_view = METHOD_VIEW
     elif st.session_state.fl_view in ("Forecast", "Rain index"):
         # screens removed 2026-09-25 — a session left on one lands on the forecast
-        st.session_state.fl_view = VIEWS[0][1]
+        st.session_state.fl_view = HOME
 
     with st.sidebar:
         for icon, label in VIEWS:
@@ -810,7 +814,7 @@ def render(shell) -> None:
             rivers_toggle=False)
 
     def search_row():
-        """Same selection as SlopeSense, and the SAME session key on purpose —
+        """Same selection as SlideSense, and the SAME session key on purpose —
         a place searched in one module is still selected in the other."""
         s1, s2, s3 = st.columns([4.2, 1.3, 1.05], vertical_alignment="bottom")
         with s2:

@@ -139,11 +139,11 @@ ARM_JS = """
                            + '[class*="st-key-backbone_strip"]');
     if (!wrap) return;                       // not a module-opening button
     if (wrap.className.indexOf('tile_ghost') !== -1) return;   // "More modules"
-    const tile = wrap.querySelector('.tile');
+    const tile = wrap.querySelector('.tile, .lp-prod');
     const accent = tile
       ? getComputedStyle(tile).getPropertyValue('--tile').trim() : '';
-    const nameEl = wrap.querySelector('.tile-name, .backbone-strip-name');
-    const subEl = wrap.querySelector('.tile-tag, .backbone-strip-tag');
+    const nameEl = wrap.querySelector('.tile-name, .backbone-strip-name, .lp-prod-name');
+    const subEl = wrap.querySelector('.tile-tag, .backbone-strip-tag, .lp-prod-tag');
     overlay('Opening ' + (nameEl ? nameEl.textContent : 'module') + '…',
             subEl ? subEl.textContent : '', accent);
   };

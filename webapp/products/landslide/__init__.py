@@ -1,4 +1,5 @@
-"""SlopeSense — the landslide module.
+"""SlideSense — the landslide module. (Called SlopeSense until 2026-10-11;
+that name now belongs to the whole platform.)
 
     hazard = susceptibility (where, 100 m, static)
            x trigger        (when, ~22 km, daily)
