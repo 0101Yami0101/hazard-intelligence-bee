@@ -112,15 +112,16 @@ def shots_css() -> str:
 def nav() -> str:
     links = "".join(f"<a href='#lp-{k}'><i>{i}</i>{t}</a>" for i, (k, t) in enumerate(SECTIONS, 1))
     return _c(f"<nav class='lp-nav' aria-label='The story'><a class='lp-nav-top' href='#lp-top' "
-              f"title='Back to the top'>◎</a>{links}</nav>")
+              f"title='Back to the top'>◎</a>{links}</nav>"
+              # the company's mark, in the page's top left corner (it scrolls away with the page)
+              f"<a class='lp-brand' href='{COMPANY_URL}' target='_blank' rel='noopener' "
+              f"title='Built by BEE Solutions'><i class='lp-bee'></i><span><em>BEE</em> Solutions</span></a>")
 
 
 def hero_lede() -> str:
     return _c(f"""
     <div class='lp-lede'><b>One shared data backbone for mountain hazards.</b>
-    <span>From fragmented mountain data to actionable intelligence.</span>
-    <a class='lp-by' href='{COMPANY_URL}' target='_blank' rel='noopener'><i class='lp-bee'></i>by
-    <em>BEE</em> Solutions</a></div>""")
+    <span>From fragmented mountain data to actionable intelligence.</span></div>""")
 
 
 def hero_cue() -> str:
@@ -564,15 +565,22 @@ _BASE_CSS = """
 .lp-lede b{font-family:'Sora',sans-serif;font-size:1.12rem;font-weight:600;color:var(--txt);
   letter-spacing:-.01em;}
 .lp-lede span{color:var(--mut);font-size:.86rem;}
-/* the company's mark: small, gold, and a link to its own site */
+/* the company's mark: small, gold, a link to its own site, in the page's top
+   left corner. Placed against the scrolling area itself (stMain is made the
+   reference, and the one wrapper in between is taken out of the way), so it
+   scrolls away with the first screen instead of riding over the story. */
 .lp-bee{display:inline-block;flex:none;width:24px;height:17px;background:center/contain no-repeat;}
-.lp-by{display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:4px 11px 4px 8px;
-  border:1px solid color-mix(in srgb,var(--bee) 34%,transparent);
-  background:color-mix(in srgb,var(--bee) 6%,transparent);
-  font-family:'Space Grotesk','Inter',sans-serif;font-size:.68rem;font-weight:500;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--mut)!important;text-decoration:none!important;}
-.lp-by em{font-style:normal;font-weight:700;color:var(--bee);}
-.lp-by:hover{border-color:var(--bee);color:var(--txt)!important;}
+[data-testid="stMain"]:has(.lp-brand){position:relative;}
+[data-testid="stElementContainer"]:has(.lp-brand){position:static!important;}
+.lp-brand{position:absolute;left:22px;top:15px;z-index:1000000;display:inline-flex;align-items:center;gap:9px;
+  font-family:'Space Grotesk','Inter',sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--mut)!important;text-decoration:none!important;white-space:nowrap;}
+.lp-brand .lp-bee{width:34px;height:24px;}
+.lp-brand em{font-style:normal;font-weight:700;color:var(--bee);}
+.lp-brand:hover{color:var(--txt)!important;}
+/* the platform's name and the line under it, set to the same width */
+.land-title{display:grid!important;width:max-content;font-size:2rem!important;letter-spacing:.074em!important;}
+.land-title span{text-align:justify;text-align-last:justify;}
 .lp-cue-row{display:flex;justify-content:center;}
 .lp-cue{display:flex;flex-direction:column;align-items:center;gap:2px;margin:20px auto 0;
   color:var(--mut)!important;text-decoration:none!important;font-size:.72rem;font-weight:600;
@@ -934,6 +942,11 @@ _BASE_CSS = """
   .lp-rules,.lp-branches,.lp-nexts{grid-template-columns:repeat(2,minmax(0,1fr));}
   .lp-two,.lp-reuse{grid-template-columns:1fr;gap:24px;}
   .lp-det-body{grid-template-columns:1fr;gap:18px;}
+}
+@media (max-width:1100px){
+  /* the jump bar needs the top of a narrow window: the mark sits under it */
+  .lp-brand{top:57px;left:16px;}
+  .lp-brand .lp-bee{width:28px;height:20px;}
 }
 @media (max-width:760px){
   .lp-sec{padding-top:54px;}
