@@ -111,9 +111,13 @@ def shots_css() -> str:
 # ───────────────────────────── the pieces ────────────────────────────────────
 def nav() -> str:
     links = "".join(f"<a href='#lp-{k}'><i>{i}</i>{t}</a>" for i, (k, t) in enumerate(SECTIONS, 1))
-    return _c(f"<nav class='lp-nav' aria-label='The story'><a class='lp-nav-top' href='#lp-top' "
+    # The company's mark floats in the top left corner, like the jump bar. On a
+    # narrow window there is no room beside the bar, so there the mark rides
+    # inside it as its first item instead (the corner one is hidden).
+    bee = (f"<a class='lp-nav-bee' href='{COMPANY_URL}' target='_blank' rel='noopener' "
+           f"title='Built by BEE Solutions'><i class='lp-bee'></i></a>")
+    return _c(f"<nav class='lp-nav' aria-label='The story'>{bee}<a class='lp-nav-top' href='#lp-top' "
               f"title='Back to the top'>◎</a>{links}</nav>"
-              # the company's mark, in the page's top left corner (it scrolls away with the page)
               f"<a class='lp-brand' href='{COMPANY_URL}' target='_blank' rel='noopener' "
               f"title='Built by BEE Solutions'><i class='lp-bee'></i><span><em>BEE</em> Solutions</span></a>")
 
@@ -565,19 +569,21 @@ _BASE_CSS = """
 .lp-lede b{font-family:'Sora',sans-serif;font-size:1.12rem;font-weight:600;color:var(--txt);
   letter-spacing:-.01em;}
 .lp-lede span{color:var(--mut);font-size:.86rem;}
-/* the company's mark: small, gold, a link to its own site, in the page's top
-   left corner. Placed against the scrolling area itself (stMain is made the
-   reference, and the one wrapper in between is taken out of the way), so it
-   scrolls away with the first screen instead of riding over the story. */
+/* the company's mark: small, gold, a link to its own site. It floats in the
+   top left corner and stays there while the page scrolls, in the same pill
+   as the jump bar so it reads over whatever passes beneath. */
 .lp-bee{display:inline-block;flex:none;width:24px;height:17px;background:center/contain no-repeat;}
-[data-testid="stMain"]:has(.lp-brand){position:relative;}
-[data-testid="stElementContainer"]:has(.lp-brand){position:static!important;}
-.lp-brand{position:absolute;left:22px;top:15px;z-index:1000000;display:inline-flex;align-items:center;gap:9px;
+.lp-brand{position:fixed;left:14px;top:10px;z-index:1000001;display:inline-flex;align-items:center;gap:9px;
+  height:44px;box-sizing:border-box;padding:0 16px 0 11px;border-radius:999px;
+  background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 26px rgba(0,0,0,.35);
   font-family:'Space Grotesk','Inter',sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.16em;
   text-transform:uppercase;color:var(--mut)!important;text-decoration:none!important;white-space:nowrap;}
-.lp-brand .lp-bee{width:34px;height:24px;}
+.lp-brand .lp-bee{width:32px;height:23px;}
 .lp-brand em{font-style:normal;font-weight:700;color:var(--bee);}
-.lp-brand:hover{color:var(--txt)!important;}
+.lp-brand:hover{color:var(--txt)!important;border-color:color-mix(in srgb,var(--bee) 45%,var(--line));}
+.lp-nav .lp-nav-bee{display:none;padding:4px 6px 4px 8px;}
+.lp-nav .lp-nav-bee .lp-bee{width:28px;height:20px;}
 /* the platform's name and the line under it, set to the same width */
 .land-title{display:grid!important;width:max-content;font-size:2rem!important;letter-spacing:.074em!important;}
 .land-title span{text-align:justify;text-align-last:justify;}
@@ -601,7 +607,7 @@ _BASE_CSS = """
   color:var(--mut)!important;text-decoration:none!important;font-size:.76rem;font-weight:600;
   white-space:nowrap;}
 .lp-nav a:hover{color:var(--txt)!important;background:color-mix(in srgb,var(--accent) 12%,transparent);}
-.lp-nav a i{font-style:normal;font-size:.62rem;font-weight:700;width:16px;height:16px;border-radius:50%;
+.lp-nav a i:not(.lp-bee){font-style:normal;font-size:.62rem;font-weight:700;width:16px;height:16px;border-radius:50%;
   display:grid;place-items:center;color:var(--ink);
   background:linear-gradient(135deg,var(--accent),var(--accent-2));}
 .lp-nav .lp-nav-top{color:var(--accent)!important;font-size:.95rem;padding:4px 9px;}
@@ -944,9 +950,9 @@ _BASE_CSS = """
   .lp-det-body{grid-template-columns:1fr;gap:18px;}
 }
 @media (max-width:1100px){
-  /* the jump bar needs the top of a narrow window: the mark sits under it */
-  .lp-brand{top:57px;left:16px;}
-  .lp-brand .lp-bee{width:28px;height:20px;}
+  /* no room beside the jump bar: the mark moves inside it */
+  .lp-brand{display:none;}
+  .lp-nav .lp-nav-bee{display:flex;}
 }
 @media (max-width:760px){
   .lp-sec{padding-top:54px;}
