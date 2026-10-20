@@ -56,6 +56,14 @@ st.markdown(
     '<link rel="preconnect" href="https://tile.opentopomap.org">',
     unsafe_allow_html=True)
 
+# The day's flood forecast comes from the cloud daily run; fetched at most
+# once an hour, before any page reads it (products/flood/feed.py).
+try:
+    from products.flood import feed as _feed
+    _feed.refresh()
+except Exception:                                           # noqa: BLE001
+    pass                    # never let the feed stop the app: the copy on disk stays
+
 
 # ─────────────────────────── routing ─────────────────────────────────────────
 # The active module lives in the URL, not just in session state, so a link to
