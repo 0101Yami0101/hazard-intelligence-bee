@@ -81,6 +81,28 @@ SLOPE_TIERS = {
 }
 
 
+# SoilSense's kinds of number (the Assam erosion module, 2026-10-19). Same
+# glyph family as above so a badge reads the same kind of thing across modules.
+ER_TIERS = {
+    "er_estimate": ("◆", "Estimate", "#2bb3ad", "solid",
+                    "Estimated soil washed off by rain, in tonnes per hectare per year, from the "
+                    "standard recipe (rain strength × soil × slope × cover). Indicative: it can be "
+                    "off by a factor of several."),
+    "er_class": ("≈", "Class", "#c4a7ff", "dashed",
+                 "The estimate cut at fixed lines (5, 10, 20, 40, 80 t/ha/yr). It carries the same "
+                 "uncertainty as the estimate; it is not a chance."),
+    "er_rank": ("#", "Rank", "#e0a458", "solid",
+                "Where to act first, by average loss over a small catchment or a district. "
+                "Firmer than any single number, and marked when it depends on the rain map."),
+    "er_outlook": ("≈", "Outlook", "#c4a7ff", "dashed",
+                   "Weekly outlook: the next 7 days' forecast rain, set against what is normal at "
+                   "that place for the time of year, applied to the erosion map. Approximate, "
+                   "built on a forecast; it does not measure soil moved."),
+    "er_input": ("☂", "Input", "#7fd4f0", "dotted",
+                 "Input: the forecast rain that feeds the outlook. Not a soil-loss number."),
+}
+
+
 FS_CSS = """
 <style>
 .block-container{max-width:1720px!important;padding-top:1.5rem!important;}
@@ -116,9 +138,11 @@ FS_CSS = """
 /* The header when its own box is narrow — a phone, or a tablet with the menu
    open (470 px of page, where Streamlit still lays columns side by side and
    the search row ran off the right edge, 2026-10-10): title on its own line,
-   the search box on the next, its buttons two to a row under it. */
+   the search box on the next, its buttons two to a row under it. Up to
+   900 px, not 640: on an iPad mini (706 px of page) the one-row header broke
+   its title over two lines and cut the buttons to "My locati" (2026-10-12). */
 .st-key-fs_head{container-type:inline-size;container-name:fshead;}
-@container fshead (max-width:640px){
+@container fshead (max-width:900px){
   .st-key-fs_head [data-testid="stHorizontalBlock"]{flex-wrap:wrap!important;}
   .st-key-fs_head [data-testid="stColumn"]{flex:1 1 100%!important;min-width:100%!important;width:auto!important;}
   .st-key-fs_head [data-testid="stColumn"] [data-testid="stColumn"]{flex:1 1 40%!important;min-width:40%!important;}
@@ -310,10 +334,24 @@ FS_CSS = """
   .fs-rlist{display:flex;}
   .fs-rrow.more,.fs-rhead.more{display:none;}
 }
+/* What changed · needs attention · track record: three cards in a row need
+   about 265 px each. Narrower than that their lines were cut to "Arunac…"
+   (an iPad mini, or a larger iPad with the menu open): one under another. */
+.st-key-fs_eq{container-type:inline-size;container-name:fseq;}
+@container fseq (max-width:800px){
+  .st-key-fs_eq [data-testid="stColumn"]{flex:1 1 100%!important;min-width:100%!important;width:auto!important;}
+}
 /* a row of small tiles inside a narrow card (the track record) */
 .fs-tight .fs-tile{padding:9px 10px 10px;}
 .fs-tight .fs-tile-v{font-size:1.16rem;}
 @media (max-width:1100px){.fs-tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important;}}
+/* A tablet on its side with the menu open (a window of 1100 to 1250 px, some
+   750 to 900 px of page): six headline tiles in one row were 130 px each.
+   Three to a row. Only the rows of five or six; a pair stays a pair. */
+@media (min-width:1100.02px) and (max-width:1250px){
+  .stApp:has([data-testid="stSidebar"][aria-expanded="true"]) .fs-tiles:is([style*="repeat(6,"],[style*="repeat(5,"]){
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+}
 /* ---- "what this page is not", beside the key ---- */
 .fs-note{margin-left:8px;font-size:.7rem;color:var(--mut);border:1px dashed var(--line);
   border-radius:999px;padding:1px 10px;white-space:nowrap;}
@@ -350,7 +388,7 @@ def _i(text: str, where: str = "") -> str:
 def badge(tier: str, more: str = "", where: str = "", mini: bool = False) -> str:
     """The badge that says what kind of number sits next to it; `mini` is
     the glyph alone, for tight spots (the key at the top names each one)."""
-    g, name, col, style, tip = TIERS.get(tier) or SLOPE_TIERS[tier]
+    g, name, col, style, tip = TIERS.get(tier) or SLOPE_TIERS.get(tier) or ER_TIERS[tier]
     t = f"{name}. " * mini + tip + (" " + _plain(more) if more else "")
     return (f"<span class='fs-badge fs-tip {where}' data-tip='{_esc(t)}' "
             f"style='--c:{col};border-style:{style}'>{g}{'' if mini else ' ' + name}</span>")

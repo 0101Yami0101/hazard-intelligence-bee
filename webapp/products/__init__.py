@@ -43,10 +43,16 @@ class Product:
     # that string as the hover explanation (e.g. a page still being
     # validated, not yet fit to show anyone outside the team).
     extra_nav: tuple[tuple[str, str, str | None], ...] = ()
+    # The state the module covers, for the side menu's tag. Every module was
+    # Arunachal until SoilSense (Assam, 2026-10-19).
+    region: str = "Arunachal Pradesh"
 
     @property
     def available(self) -> bool:
-        return self.status == "live"
+        # A "building" module opens too: its tile carries the 🔧 Building pill
+        # and its pages say what is not finished. Only "foundation"-style
+        # placeholders without a page would stay shut.
+        return self.status in ("live", "building")
 
     def render(self, shell) -> None:
         importlib.import_module(f"products.{self.slug}.view").render(shell)
@@ -82,6 +88,20 @@ REGISTRY: list[Product] = [
         status="live",
         nav_key="fl_view",
         extra_nav=(("📋", "How to read this forecast", None),)),
+    Product(
+        slug="erosion",
+        name="SoilSense",
+        hazard="Soil erosion",
+        icon="◬",
+        tagline="Soil erosion risk · Assam",
+        blurb="Where rain washes soil off the land, from rain strength, soil, slope "
+              "and ground cover on the same backbone, moved to a second state. "
+              "Ranks small catchments and districts for conservation work, each "
+              "with its main cause and how firm the ranking is.",
+        accent="#e0a458",
+        status="building",
+        nav_key="er_view",
+        region="Assam"),
     Product(
         slug="backbone",
         name="Data Backbone",

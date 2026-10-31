@@ -2085,7 +2085,8 @@ def render(shell, s, search_row) -> None:
 
     # ── what changed · needs attention · track record ────────────────────
     st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3, gap="medium")
+    # keyed so the three stand one under another where the page is narrow (ui.py)
+    c1, c2, c3 = st.container(key="fs_eq").columns(3, gap="medium")
     with c1:
         with st.container(border=True, key="fs_eq_1"):
             st.markdown(_changes(snap, k_sel, sel), unsafe_allow_html=True)

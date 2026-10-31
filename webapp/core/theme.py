@@ -419,6 +419,47 @@ div[data-testid="stExpander"] > details{
   .arch-loop{flex-wrap:wrap;gap:6px 11px;}
 }
 
+/* ---- tablets (2026-10-12) -----------------------------------------------
+   An upright iPad is 744 to 1032 px wide; on its side, 1080 to 1376. From
+   768 px the side menu no longer floats over the page, it takes 300 px OUT
+   of it — and Streamlit sizes everything by the WINDOW, not by what is left.
+   So an 820 px iPad with the menu open had 480 px of page laid out as a
+   desktop: three columns of 110 px, words broken a letter to a line. A phone
+   never hits this (under 640 px Streamlit stacks) and nor does a PC.
+
+   1. From 864 px Streamlit pads the page 80 px a side. On a tablet that is a
+      quarter of what the menu left. Up to 1400 px, where the page reaches
+      its full width anyway: that takes in the 13-inch iPads on their side. */
+@media (min-width:864px) and (max-width:1400px){
+  .stApp:has([data-testid="stSidebar"]) .block-container{
+    padding-left:1.5rem!important;padding-right:1.5rem!important;}
+}
+/* The button that closes the side menu. From 768 px Streamlit shows it only
+   while the pointer is over the menu, and a finger has no "over": on a
+   tablet the one way to get the page's full width back was invisible. Shown
+   always where there is no hover. A PC with a mouse is unchanged. */
+@media (hover:none){
+  [data-testid="stSidebarCollapseButton"],[data-testid="stSidebarCollapseButton"] button{
+    visibility:visible!important;}
+}
+/* 2. Menu open and under 640 px of page left (a window of 768 to 988 px):
+      the phone layout, by the rule Streamlit itself uses under 640 px.
+      :where() keeps this as weak as Streamlit's own rule, so every layout
+      the app pins for a phone (the header, the day buttons) still wins. */
+@media (min-width:768px) and (max-width:988px){
+  :where(.stApp:has([data-testid="stSidebar"][aria-expanded="true"])) [data-testid="stMain"] [data-testid="stColumn"]{
+    min-width:calc(100% - 1.5rem);}
+  .stApp:has([data-testid="stSidebar"][aria-expanded="true"]) [class*="st-key-daystrip_"] [data-testid="stHorizontalBlock"]{flex-wrap:wrap!important;gap:.5rem!important;}
+  .stApp:has([data-testid="stSidebar"][aria-expanded="true"]) [class*="st-key-daystrip_"] [data-testid="stColumn"]{flex:1 1 22%!important;min-width:22%!important;width:auto!important;}
+  .stApp:has([data-testid="stSidebar"][aria-expanded="true"]) [class*="st-key-daystrip_"] button p{font-size:.78rem;}
+  /* figures (a row of four): two to a row. There is room for two here,
+     which a phone does not have, and eight in a column is a long scroll. */
+  .stApp:has([data-testid="stSidebar"][aria-expanded="true"]) [data-testid="stMain"] [data-testid="stColumn"]:has(> div > [data-testid="stElementContainer"] [data-testid="stMetric"]){
+    min-width:calc(50% - 1rem);flex:1 1 calc(50% - 1rem);}
+  .stApp:has([data-testid="stSidebar"][aria-expanded="true"]) .arch-node{height:auto;min-height:48px;}
+  .stApp:has([data-testid="stSidebar"][aria-expanded="true"]) .arch-loop{flex-wrap:wrap;gap:6px 11px;}
+}
+
 /* ---- landing page: compact, one screen, no scrolling ---- */
 /* Each tile carries its module's accent through --tile, set inline, so the
    colour comes from the registry rather than from a rule per module here.

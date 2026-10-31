@@ -268,7 +268,7 @@ with st.sidebar:
         <div class="brand brand-sm">
           <div class="brand-logo" style="color:{product.accent}">{product.icon}</div>
           <div><div class="brand-name">{product.name}</div>
-               <div class="brand-tag">ARUNACHAL PRADESH · {product.hazard.upper()}</div></div>
+               <div class="brand-tag">{product.region.upper()} · {product.hazard.upper()}</div></div>
         </div>""", unsafe_allow_html=True)
     with icol:
         with st.popover("ℹ️", width="stretch"):

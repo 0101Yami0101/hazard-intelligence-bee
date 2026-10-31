@@ -1,0 +1,712 @@
+{
+ "region": "assam",
+ "state": "Assam",
+ "generated_utc": "2026-10-29T17:52:33+00:00",
+ "bounds": [
+  [
+   24.13613519748404,
+   89.69860048189341
+  ],
+  [
+   27.97141198585381,
+   96.01803258366216
+  ]
+ ],
+ "center": [
+  26.053773591668925,
+  92.85831653277779
+ ],
+ "scored_pct": 69.53,
+ "not_scored_pct": {
+  "water/built/wetland/snow/moss/mangrove": 7.37,
+  "channel cells": 0.79,
+  "river land < 2 m": 21.99
+ },
+ "mean_A": {
+  "main": 21.63,
+  "ired": 24.39,
+  "tree_C_0.003": 6.99
+ },
+ "median_A": 7.5245,
+ "shares": {
+  "main": {
+   "slight": 44.8,
+   "moderate": 10.22,
+   "high": 13.75,
+   "very high": 14.17,
+   "severe": 11.03,
+   "very severe": 6.04
+  },
+  "ired": {
+   "slight": 40.95,
+   "moderate": 10.11,
+   "high": 15.74,
+   "very high": 14.81,
+   "severe": 11.34,
+   "very severe": 7.06
+  },
+  "treeC_alt": {
+   "slight": 67.46,
+   "moderate": 15.4,
+   "high": 10.78,
+   "very high": 4.41,
+   "severe": 0.97,
+   "very severe": 0.97
+  }
+ },
+ "settings": {
+  "R": "InRESatE (IRED alongside)",
+  "K": "Williams 1995, mean of 0-5 and 15-30 cm",
+  "L": "McCool 1989 m, lambda capped 300 m",
+  "S": "McCool 1987",
+  "treetop_guard": {
+   "version": 2,
+   "applies_to": "tree cells and cells next to a tree cell",
+   "reference": "cropland not next to trees",
+   "band_m": 20.0,
+   "cropland_pctl": 90,
+   "cap_deg": 1.225,
+   "share_of_state_capped_pct": 36.4
+  },
+  "C": {
+   "10": 0.03,
+   "20": 0.11,
+   "30": 0.16,
+   "40": 0.34,
+   "60": 0.45
+  },
+  "P": 1,
+  "river_land_m": 2.0,
+  "classes_tpha": [
+   5,
+   10,
+   20,
+   40,
+   80
+  ]
+ },
+ "checks": {
+  "S1": {
+   "main": {
+    "hills_median": 26.91,
+    "plains_median": 3.24,
+    "ratio": 8.3
+   },
+   "ired": {
+    "hills_median": 25.33,
+    "plains_median": 4.79,
+    "ratio": 5.29
+   },
+   "tree_C_0.003": {
+    "hills_median": 2.95,
+    "plains_median": 1.25,
+    "ratio": 2.36
+   },
+   "pass": true
+  },
+  "S2": {
+   "top5_LS_threshold": 0.507,
+   "edge_share_of_top5_pct": 69.0,
+   "edge_share_of_top5_unguarded_pct": 68.7,
+   "edge_share_of_all_flat_pct": 65.1,
+   "tree_share_of_top5_pct": 50.1,
+   "tree_share_of_top5_unguarded_pct": 88.8,
+   "pass_original_25pct": false,
+   "pass": false
+  },
+  "S3": {
+   "K_min": 0.0148,
+   "K_max": 0.0572,
+   "C_min": 0.029999999329447746,
+   "C_max": 0.44999998807907104,
+   "R_guwahati_grid": 7900,
+   "R_guwahati_error_pct": -0.3,
+   "pass": true,
+   "ISED": {
+    "file": "K-factor_India.tif",
+    "districts": 35,
+    "spearman": 0.94,
+    "median_ratio_ours_over_ised": 0.57
+   }
+  },
+  "S4": {
+   "largest_class_share_pct": {
+    "main (InRESatE, guard, McCool, river land < 2 m)": 44.8,
+    "IRED rain": 40.95,
+    "no treetop guard": 26.46,
+    "Nearing steepness": 44.61,
+    "tree C 0.003": 67.46,
+    "river land < 5 m": 42.0
+   },
+   "pass": true
+  },
+  "S5": {
+   "not_assessed_cells": 2364998,
+   "of_which_given_a_class": 0,
+   "pass": true
+  },
+  "S7": {
+   "units_counted": 703,
+   "top20_shared_inresate_vs_ired": 7,
+   "top20_shared_C03_vs_C003": 4,
+   "top20_in_all_four_runs": 0,
+   "spearman_all_units_vs_main": {
+    "ired_C03": 0.82,
+    "inresate_C003": 0.59,
+    "ired_C003": 0.2
+   },
+   "pass": false
+  },
+  "S8": {
+   "file": "PSL_India.tif",
+   "districts": 35,
+   "spearman_main_vs_iwed": -0.46,
+   "spearman_ired_run_vs_iwed": 0.08,
+   "expectation_met": true,
+   "per_factor": {
+    "R": {
+     "spearman_districts": 0.27,
+     "median_ours": 5270.0981,
+     "median_iwed": 6194.4971
+    },
+    "K": {
+     "spearman_districts": 0.89,
+     "median_ours": 0.0166,
+     "median_iwed": 0.0285
+    },
+    "LS": {
+     "spearman_districts": 0.81,
+     "median_ours": 0.5067,
+     "median_iwed": 3.3904
+    },
+    "C": {
+     "spearman_districts": 0.91,
+     "median_ours": 0.03,
+     "median_iwed": 0.1317
+    }
+   },
+   "LS_by_true_slope_median": {
+    "0-0.5 deg": {
+     "share_pct": 8.3,
+     "LS_ours": 0.11,
+     "LS_iwed": 2.67
+    },
+    "0.5-1 deg": {
+     "share_pct": 7.4,
+     "LS_ours": 0.26,
+     "LS_iwed": 2.89
+    },
+    "1-2 deg": {
+     "share_pct": 11.8,
+     "LS_ours": 0.47,
+     "LS_iwed": 2.99
+    },
+    "2-5 deg": {
+     "share_pct": 29.9,
+     "LS_ours": 0.46,
+     "LS_iwed": 3.07
+    },
+    "5-15 deg": {
+     "share_pct": 26.0,
+     "LS_ours": 7.06,
+     "LS_iwed": 3.9
+    },
+    "15-30 deg": {
+     "share_pct": 14.8,
+     "LS_ours": 26.61,
+     "LS_iwed": 5.16
+    },
+    "30-90 deg": {
+     "share_pct": 1.6,
+     "LS_ours": 53.72,
+     "LS_iwed": 5.57
+    }
+   }
+  }
+ },
+ "n_catchments": 703,
+ "n_top_both": 7,
+ "stability": {
+  "region": "assam",
+  "draws": 1000,
+  "seed": 42,
+  "ranges": {
+   "R_blend_w": [
+    0,
+    1
+   ],
+   "tree_C": [
+    0.003,
+    0.1
+   ],
+   "class_scale": 1.5,
+   "S": [
+    "McCool",
+    "Nearing"
+   ]
+  },
+  "catchments_robust_top20": 3,
+  "catchments_top20_in_half_the_runs": 15,
+  "main_top20_robust": 3,
+  "main_top20_median_top20_pct": 65.65,
+  "firm_mark_vs_runs": {
+   "": 0.0,
+   "depends on the rain source": 32.8,
+   "top under both rain maps": 76.5
+  },
+  "seconds": 238,
+  "districts_top5_pct": [
+   {
+    "district": "West Karbi Anglong",
+    "top5_pct": 77.6,
+    "rank_median": 4
+   },
+   {
+    "district": "Dima Hasao",
+    "top5_pct": 76.7,
+    "rank_median": 3
+   },
+   {
+    "district": "Cachar",
+    "top5_pct": 75.7,
+    "rank_median": 3
+   },
+   {
+    "district": "Kamrup Metro",
+    "top5_pct": 59.9,
+    "rank_median": 4
+   },
+   {
+    "district": "Bongaigaon",
+    "top5_pct": 48.6,
+    "rank_median": 6
+   },
+   {
+    "district": "Kamrup Rural",
+    "top5_pct": 42.6,
+    "rank_median": 7
+   },
+   {
+    "district": "Dhubri",
+    "top5_pct": 40.7,
+    "rank_median": 8
+   },
+   {
+    "district": "Barpeta",
+    "top5_pct": 22.2,
+    "rank_median": 12
+   },
+   {
+    "district": "Karbi Anglong",
+    "top5_pct": 16.1,
+    "rank_median": 8
+   },
+   {
+    "district": "South Salmara",
+    "top5_pct": 15.9,
+    "rank_median": 13
+   }
+  ]
+ },
+ "field_kit": {
+  "top": 20,
+  "points_per": 5,
+  "gap_m": 500.0,
+  "n_points": 100,
+  "columns": [
+   "visited_date",
+   "observer",
+   "rills_seen",
+   "gullies_seen",
+   "bare_soil_pct",
+   "fresh_clearing",
+   "existing_works",
+   "photo_ids",
+   "notes"
+  ]
+ },
+ "tree_split": {
+  "adopted": false
+ },
+ "measured_cover": {
+  "adopted": false
+ },
+ "change": {
+  "years": [
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ],
+  "flag_years": [
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ],
+  "rules": {
+   "valid_min": 0.5,
+   "bare_min": 0.25,
+   "base_max": 0.1,
+   "steep_deg": 10.0,
+   "bare_ndvi": 0.3,
+   "window": "1 Feb - 30 Apr",
+   "C_cleared": 0.34,
+   "refresh_lc": [
+    10,
+    20,
+    30
+   ]
+  },
+  "attempt": 2,
+  "drop_min": 0.2,
+  "tests": {
+   "F1_stable_forest": {
+    "rate": 0.0003,
+    "bar": 0.01,
+    "pass": true,
+    "flagged": 1109,
+    "cell_years": 3500594,
+    "cells": 500420
+   },
+   "F2_tea": {
+    "rate": 0.009,
+    "bar": 0.03,
+    "pass": true,
+    "flagged": 4756,
+    "cell_years": 528477,
+    "cells": 75526
+   },
+   "H1_hansen_clearing": {
+    "rate": 0.4442,
+    "bar": 0.5,
+    "pass": false,
+    "cell_events": 33109,
+    "caught": 14708
+   }
+  },
+  "E3": {
+   "flag": {
+    "n": 40,
+    "yes": 25,
+    "no": 8,
+    "cant_tell": 7,
+    "share_yes": 0.625,
+    "share_yes_readable": 0.758,
+    "bar": 0.7,
+    "pass": false
+   },
+   "unflagged": {
+    "n": 40,
+    "yes": 1,
+    "no": 35,
+    "cant_tell": 4,
+    "share_yes": 0.028,
+    "share_yes_readable": 0.028,
+    "bar": 0.1,
+    "pass": true
+   },
+   "pass": false
+  },
+  "flags_shown": false,
+  "yearly": {
+   "2019": {
+    "evaluable_pct_of_scored": 99.92,
+    "evaluable_pct_of_steep_scored": 100.0,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.25,
+    "meanA_dry_tpha": 23.83
+   },
+   "2020": {
+    "evaluable_pct_of_scored": 99.95,
+    "evaluable_pct_of_steep_scored": 100.0,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.51,
+    "flags": 6317,
+    "meanA_dry_tpha": 24.22
+   },
+   "2021": {
+    "evaluable_pct_of_scored": 99.99,
+    "evaluable_pct_of_steep_scored": 100.0,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.86,
+    "flags": 10069,
+    "meanA_dry_tpha": 24.56
+   },
+   "2022": {
+    "evaluable_pct_of_scored": 99.9,
+    "evaluable_pct_of_steep_scored": 100.0,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.03,
+    "flags": 4066,
+    "meanA_dry_tpha": 23.36
+   },
+   "2023": {
+    "evaluable_pct_of_scored": 99.79,
+    "evaluable_pct_of_steep_scored": 100.0,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.43,
+    "flags": 6183,
+    "meanA_dry_tpha": 23.98
+   },
+   "2024": {
+    "evaluable_pct_of_scored": 99.73,
+    "evaluable_pct_of_steep_scored": 99.96,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.61,
+    "flags": 7674,
+    "meanA_dry_tpha": 24.45
+   },
+   "2025": {
+    "evaluable_pct_of_scored": 99.59,
+    "evaluable_pct_of_steep_scored": 99.86,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.94,
+    "flags": 7447,
+    "meanA_dry_tpha": 24.89
+   },
+   "2026": {
+    "evaluable_pct_of_scored": 99.73,
+    "evaluable_pct_of_steep_scored": 100.0,
+    "no_data_pct_of_state": 0.0,
+    "bare_pct_of_steep_scored_evaluable": 1.39,
+    "flags": 4062,
+    "meanA_dry_tpha": 24.21
+   }
+  },
+  "meanA_main": 21.63
+ },
+ "nrsc": {
+  "X1": {
+   "ours": 0.661,
+   "IWED": 0.419,
+   "slope": 0.651,
+   "bar": 0.7,
+   "pass": false
+  },
+  "X2": {
+   "ours": 0.36,
+   "IWED": -0.3,
+   "slope": 0.438,
+   "bar": 0.4,
+   "pass": false
+  },
+  "X3": {
+   "ours": 0.129,
+   "IWED": -0.355,
+   "slope": 0.364,
+   "bar": 0.5,
+   "pass": false
+  }
+ },
+ "ai": {
+  "ships": true,
+  "pctl": [
+   50,
+   75,
+   90,
+   97
+  ],
+  "auc": {
+   "ai_A": 0.8202,
+   "ai_B": 0.823,
+   "formula": 0.6603,
+   "slope_alone": 0.6503
+  },
+  "catchment_rho": {
+   "A": 0.6586,
+   "B": 0.659,
+   "formula": 0.3584
+  },
+  "folds": [
+   0.7361,
+   0.9024,
+   0.7217,
+   0.9212,
+   0.8266
+  ],
+  "top_inputs": [
+   [
+    "soil_cfvo_60-100cm",
+    23.1
+   ],
+   [
+    "R_ired",
+    13.4
+   ],
+   [
+    "R_inresate",
+    13.2
+   ],
+   [
+    "dem_elev_m",
+    8.5
+   ],
+   [
+    "hydro_chan_log",
+    7.3
+   ],
+   [
+    "canopy_h_eth",
+    4.4
+   ]
+  ],
+  "eyecheck": {
+   "pictures": 300,
+   "yes": 20,
+   "auc_formula": 0.616,
+   "auc_ai": 0.628,
+   "formula_ratio": 3.08,
+   "ai_ratio": 1.03,
+   "ai_top": 0.033,
+   "ai_low": 0.032
+  }
+ },
+ "delivered": {
+  "edges": [
+   0.5,
+   1,
+   2,
+   5
+  ],
+  "state_loss_mt": 116.4,
+  "state_delivered_mt": 7.8,
+  "share_pct": 6.7,
+  "sdr_p10_p50_p90": [
+   0.023,
+   0.04,
+   0.077
+  ],
+  "class_share": [
+   0.5574,
+   0.1209,
+   0.1234,
+   0.1269,
+   0.0714
+  ]
+ },
+ "soil_value": {
+  "region": "assam",
+  "scored_ha": 5423113,
+  "N_t_per_yr": 410321.0,
+  "C_t_per_yr": 3019400.0,
+  "urea_bags_per_yr": 19822000.0,
+  "urea_rs_crore_per_yr": 528.3,
+  "N_kg_per_ha_median": 16.19,
+  "topsoil_mm_per_yr_median": 0.59,
+  "topsoil_mm_per_yr_mean": 1.81,
+  "soil_N_gkg_median": 2.64,
+  "soil_C_gkg_median": 20.6,
+  "prices": {
+   "urea_bag_kg": 45,
+   "urea_bag_rs": 266.5,
+   "urea_N": 0.46
+  },
+  "enrichment_ratio": 1,
+  "by_cover": {
+   "cropland": {
+    "ha": 1351703,
+    "N_t_per_yr": 47638.0,
+    "N_t_per_yr_low_treeC": 47638.0,
+    "N_kg_per_ha_mean": 35.2,
+    "N_kg_per_ha_median": 21.3,
+    "urea_bags_per_ha_mean": 1.7,
+    "urea_rs_crore_per_yr": 61.3,
+    "topsoil_mm_per_yr_median": 0.78
+   },
+   "tree": {
+    "ha": 3892703,
+    "N_t_per_yr": 331247.0,
+    "N_t_per_yr_low_treeC": 33125.0,
+    "N_kg_per_ha_mean": 85.1,
+    "N_kg_per_ha_median": 9.4,
+    "urea_bags_per_ha_mean": 4.11,
+    "urea_rs_crore_per_yr": 426.5,
+    "topsoil_mm_per_yr_median": 0.28
+   },
+   "shrub_grass": {
+    "ha": 154735,
+    "N_t_per_yr": 28369.0,
+    "N_t_per_yr_low_treeC": 28369.0,
+    "N_kg_per_ha_mean": 183.3,
+    "N_kg_per_ha_median": 18.1,
+    "urea_bags_per_ha_mean": 8.86,
+    "urea_rs_crore_per_yr": 36.5,
+    "topsoil_mm_per_yr_median": 0.62
+   },
+   "other": {
+    "ha": 23972,
+    "N_t_per_yr": 3068.0,
+    "N_t_per_yr_low_treeC": 3068.0,
+    "N_kg_per_ha_mean": 128.0,
+    "N_kg_per_ha_median": 48.2,
+    "urea_bags_per_ha_mean": 6.18,
+    "urea_rs_crore_per_yr": 3.9,
+    "topsoil_mm_per_yr_median": 1.84
+   }
+  },
+  "N_t_per_yr_low_treeC": 112199.0
+ },
+ "outlook_grade": {
+  "region": "assam",
+  "points": 125,
+  "issues": 44,
+  "years": [
+   2024,
+   2025
+  ],
+  "all": {
+   "weeks": 44,
+   "G1_median_rho": 0.181,
+   "G1_climatology": 0.115,
+   "G1_weeks_scored": 44,
+   "G2_rho": 0.633,
+   "G2_climatology": 0.389,
+   "G3_auc": 0.765,
+   "G3_heavy_point_weeks": 899,
+   "G3_point_weeks": 5500,
+   "share_ratio_fc_over_obs_median": 0.701
+  },
+  "by_year": {
+   "2024": {
+    "weeks": 22,
+    "G1_median_rho": 0.267,
+    "G1_climatology": 0.191,
+    "G1_weeks_scored": 22,
+    "G2_rho": 0.765,
+    "G2_climatology": 0.479,
+    "G3_auc": 0.789,
+    "G3_heavy_point_weeks": 489,
+    "G3_point_weeks": 2750,
+    "share_ratio_fc_over_obs_median": 0.804
+   },
+   "2025": {
+    "weeks": 22,
+    "G1_median_rho": 0.074,
+    "G1_climatology": -0.003,
+    "G1_weeks_scored": 22,
+    "G2_rho": 0.508,
+    "G2_climatology": 0.327,
+    "G3_auc": 0.729,
+    "G3_heavy_point_weeks": 410,
+    "G3_point_weeks": 2750,
+    "share_ratio_fc_over_obs_median": 0.617
+   }
+  },
+  "bars": {
+   "G1": 0.3,
+   "G2": 0.6,
+   "G3": 0.7
+  },
+  "G1_pass": false,
+  "G2_pass": true,
+  "G3_pass": true
+ }
+}

@@ -6,39 +6,61 @@
 // Asks the browser where the visitor is and hands the answer back to the app.
 // It speaks Streamlit's component messages directly, so there is nothing to
 // build. One answer per instance: the app mounts a fresh one for each press.
+//
+// ⚠️ The handshake is retried. Streamlit only listens to a component after
+// it has heard "componentReady" from it, and only then does it send
+// "render". Said once, as the page loads, that word was sometimes spoken
+// before Streamlit was listening: no "render" ever came, the answer had
+// nowhere to go, and about one press in ten did nothing (found 2026-10-13 in
+// WebKit; the race is the same in any browser). So "ready" is repeated until
+// a "render" comes back, the browser is asked straight away without waiting
+// for it, and the answer is held until Streamlit is known to be listening.
 (function () {
-  var started = false, done = false;
+  var done = false, heard = false, held = null;
   function send(type, data) {
     var msg = {isStreamlitMessage: true, type: type};
     for (var k in data) msg[k] = data[k];
     window.parent.postMessage(msg, "*");
   }
+  function mark(what) { document.body.setAttribute("data-state", what); }
+  function flush() {
+    if (!heard || !held) return;
+    send("streamlit:setComponentValue", held);
+    mark("sent " + held.value.state);
+    held = null;
+  }
   function answer(value) {
     if (done) return;
     done = true;
-    send("streamlit:setComponentValue", {value: value, dataType: "json"});
+    held = {value: value, dataType: "json"};
+    mark("answered " + value.state);
+    flush();
   }
-  function ask() {
-    if (!navigator.geolocation) { answer({state: "unsupported"}); return; }
-    // A permission prompt that is closed without an answer calls nothing back,
-    // and the app would wait for ever. The first answer wins; this is the last.
-    setTimeout(function () { answer({state: "failed"}); }, 45000);
-    navigator.geolocation.getCurrentPosition(
-      function (p) {
-        answer({state: "ok",
-                lat: +p.coords.latitude.toFixed(4),
-                lon: +p.coords.longitude.toFixed(4)});
-      },
-      function (err) { answer({state: err.code === 1 ? "denied" : "failed"}); },
-      {enableHighAccuracy: false, timeout: 15000, maximumAge: 600000});
+  function hello() {
+    if (heard) return;
+    send("streamlit:componentReady", {apiVersion: 1});
+    send("streamlit:setFrameHeight", {height: 0});
+    setTimeout(hello, 250);
   }
   window.addEventListener("message", function (e) {
-    if (!e.data || e.data.type !== "streamlit:render" || started) return;
-    started = true;
-    ask();
+    if (!e.data || e.data.type !== "streamlit:render") return;
+    heard = true;
+    flush();
   });
-  send("streamlit:componentReady", {apiVersion: 1});
-  send("streamlit:setFrameHeight", {height: 0});
+  mark("asking");
+  hello();
+  if (!navigator.geolocation) { answer({state: "unsupported"}); return; }
+  // A permission prompt that is closed without an answer calls nothing back,
+  // and the app would wait for ever. The first answer wins; this is the last.
+  setTimeout(function () { answer({state: "failed"}); }, 45000);
+  navigator.geolocation.getCurrentPosition(
+    function (p) {
+      answer({state: "ok",
+              lat: +p.coords.latitude.toFixed(4),
+              lon: +p.coords.longitude.toFixed(4)});
+    },
+    function (err) { answer({state: err.code === 1 ? "denied" : "failed"}); },
+    {enableHighAccuracy: false, timeout: 15000, maximumAge: 600000});
 })();
 </script>
 </body>

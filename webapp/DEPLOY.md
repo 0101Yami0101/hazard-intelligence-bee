@@ -1,6 +1,6 @@
 # Putting the app online — free, about 10 minutes
 
-The app is self-contained. It reads a **5.33 MB** bundle in `assets/` and calls a
+The app is self-contained. It reads a **15.7 MB** bundle in `assets/` and calls a
 free weather service. No database, no API key, no paid tier.
 
 ## How the app is laid out
@@ -15,14 +15,21 @@ webapp/
   products/       one folder per module, plus the registry that lists them
     landslide/      SlideSense — live
     flood/          FloodSense — live (static layer unvalidated)
+    erosion/        SoilSense — Assam soil erosion, status "building"
     backbone/       Data Backbone — catalogue + pipeline view
   assets/
     base/           shared geography + the rainfall spine     (2.14 MB)
     landslide/      SlideSense model output                   (1.59 MB)
-    flood/          FloodSense layers, gauges, daily forecast (1.43 MB)
+    flood/          FloodSense layers, gauges, daily forecast (1.26 MB)
+    erosion/assam/  SoilSense maps, catchments, villages     (10.46 MB)
     backbone/       catalogue, statistics, previews           (0.17 MB)
-    landing/        two module pictures for the home page     (0.08 MB)
+    landing/        two module pictures for the home page     (0.10 MB)
 ```
+
+`erosion/assam/` is SoilSense's own geography: Assam is not on the shared
+Arunachal grid, so the module carries its state's outline, districts,
+catchments and villages with it. The full rebuild chain is in
+[SOILSENSE.md](../docs/design/SOILSENSE.md).
 
 `backbone/` summarises **308 GB** of licensed source data in 0.17 MB and
 deliberately contains none of it: histograms instead of cell values, previews
@@ -112,6 +119,7 @@ python scripts/fetch/fetch_20_openmeteo_climatology.py
 # rebuild the bundles
 python scripts/run/export_webapp_bundle.py       # base/ + landslide/
 python scripts/build/build_flood_layers.py       # flood/
+REGION=assam python scripts/run/export_erosion_bundle.py   # erosion/assam/
 python scripts/build/build_backbone_bundle.py    # backbone/ (run last —
                                                  # it measures the others)
 
@@ -142,8 +150,8 @@ streamlit run webapp/app.py
 | Constraint | This app |
 |---|---|
 | Repo size | ~37.7 MB (data excluded) |
-| Bundle the app loads | **5.33 MB** (2.14 shared + 1.59 SlideSense + 1.43 FloodSense + 0.17 Backbone) |
-| Memory | well under 1 GB — a few small arrays |
+| Bundle the app loads | **15.7 MB** (2.14 shared + 1.59 SlideSense + 1.26 FloodSense + 10.46 SoilSense + 0.17 Backbone) |
+| Memory | well under 1 GB — small arrays; SoilSense's largest are 1,694 × 2,455 one-byte maps (13 of them, about 55 MB), loaded only when it is opened |
 | Build time | ~2 min, 5 slim dependencies |
 | API keys | none — Open-Meteo is keyless |
 | Live API calls | **3 per hour**, regardless of traffic (1-hour cache) |

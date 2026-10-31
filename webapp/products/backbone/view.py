@@ -624,7 +624,14 @@ def render(shell) -> None:
         # One flat table, not eleven expanders — licence terms and links are
         # deliberately left off it, so this is source, group, size and fetch
         # date only.
+        # "States" only once a source serves more than one (the Assam
+        # erosion work, 2026-10-17); a bundle built before then has no
+        # "regions" and the column simply does not appear.
+        multi = any(len(s.get("regions", [])) > 1 or s.get("regions", ["arunachal"]) != ["arunachal"]
+                    for g in CAT["groups"] for s in g["sources"])
         rows = [{"Group": g["title"], "Source": s["source"],
+                 **({"States": " · ".join(r.title() for r in s.get("regions", ["arunachal"]))}
+                    if multi else {}),
                  "Files": s["n_files"], "Size (MB)": round(s["bytes"]/1e6, 1),
                  "Fetched": s["fetched"] or "—"}
                 for g in CAT["groups"] for s in g["sources"]]
