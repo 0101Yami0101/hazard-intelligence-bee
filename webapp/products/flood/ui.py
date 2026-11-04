@@ -153,6 +153,14 @@ FS_CSS = """
   text-transform:uppercase;margin-right:3px;}
 /* ---- tiles ---- */
 .fs-tiles{display:grid;gap:10px;margin-bottom:12px;}
+.fs-state{border:1px dashed color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:16px;
+  padding:10px 12px 0;margin:14px 0 12px;background:color-mix(in srgb,var(--accent) 4%,transparent);}
+.fs-state-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 9px;}
+.fs-state-t{font:700 .98rem/1.2 Sora,sans-serif;color:var(--txt);letter-spacing:-.01em;}
+.fs-state-p{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  border-radius:999px;padding:1px 9px;}
+.fs-state-n{font-size:.74rem;color:var(--dim);margin-left:auto;}
 .fs-tile{position:relative;background:linear-gradient(180deg,var(--panel-2),var(--panel));
   border:1px solid var(--line);border-radius:14px;padding:10px 13px 11px;min-width:0;}
 .fs-tile-top{display:flex;justify-content:space-between;align-items:center;gap:6px;
@@ -413,6 +421,19 @@ def _tiles(items: list[str], cols: int, grow: bool = False) -> str:
     return (f"<div class='fs-tiles{' fs-grow' if grow else ''}' style='grid-template-columns:"
             f"repeat({cols},minmax(0,1fr))" + (f";--cap:{rows * 215}px" if grow else "") + "'>"
             f"{''.join(items)}</div>")
+
+
+def statewide(items: list[str], cols: int, when: str = "") -> str:
+    """The statewide figures, in their own labelled frame, BELOW the main row.
+
+    They used to sit above the map, where visitors read them as figures for
+    the place they had picked; they never change with the place. So they come
+    after the place, the map and the side panel, and say so (2026-11-04)."""
+    return ("<div class='fs-state'><div class='fs-state-h'>"
+            "<span class='fs-state-t'>All of Arunachal</span>"
+            "<span class='fs-state-p'>Statewide · the same whichever place you pick</span>"
+            + (f"<span class='fs-state-n'>{when}</span>" if when else "")
+            + "</div>" + _tiles(items, cols) + "</div>")
 
 
 def _sec(title: str, *extra: str, note: str = "") -> str:

@@ -1856,7 +1856,8 @@ def render(shell, s, search_row) -> None:
                                "gauges. " for o in feeds)
                        + "Offline: " + ", ".join(off) + ". Their chances rest on rain alone.")
                       if off else "Every gauge sent a complete day recently.", "left"))
-    st.markdown(_tiles(kpis, len(kpis)), unsafe_allow_html=True)
+    from products.flood.ui import statewide
+    state_strip = statewide(kpis, len(kpis), when)      # drawn under the main row
 
     # ── main row: place | map | outlook + conditions ────────────────────
     cl, cm, cr = main_row()
@@ -2082,6 +2083,9 @@ def render(shell, s, search_row) -> None:
                 _soil_panel(snap, k_sel, sel)
             else:
                 _rivers_panel(rp, levels, own[0] if own else None, days)
+
+    # ── Arunachal as a whole ─────────────────────────────────────────────
+    st.markdown(state_strip, unsafe_allow_html=True)
 
     # ── what changed · needs attention · track record ────────────────────
     st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)

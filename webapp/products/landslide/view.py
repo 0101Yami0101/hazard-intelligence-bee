@@ -764,7 +764,7 @@ def render(shell) -> None:
                     f"rain · {day_name(di)}", "sl_input", None,
                     "The most rain at any one rain point that day.", "left"),
         ]
-        st.markdown(U._tiles(kpis, len(kpis)), unsafe_allow_html=True)
+        state_strip = U.statewide(kpis, len(kpis), long_day(di))   # drawn under the main row
 
         centre, zoom, marker, clip = frame(sel, w)
         daynums = [datetime.fromisoformat(days[i]).day for i in fut]
@@ -1062,6 +1062,9 @@ def render(shell) -> None:
                                if ROADS else "Which stretches, and how many kilometres.")
                             + "</div>", unsafe_allow_html=True)
                 to_view("Roads", "🛣️  Open road exposure", "sl_to_roads")
+
+        # ── Arunachal as a whole, that day ───────────────────────────────────
+        st.markdown(state_strip, unsafe_allow_html=True)
 
         # ── the place's week, in full ────────────────────────────────────────
         day_lbl = [datetime.fromisoformat(days[i]).strftime("%a %d %b") for i in fut]

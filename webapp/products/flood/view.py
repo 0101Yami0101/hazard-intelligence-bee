@@ -241,7 +241,7 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                 "record", None, "Reported floods, and where radar images showed new water "
                 "around each one.", "left"),
     ]
-    st.markdown(U._tiles(tiles, 6), unsafe_allow_html=True)
+    state_strip = U.statewide(tiles, 6)                 # drawn under the main row
 
     px = grid.to_px(sel["lat"], sel["lon"]) if sel else None
     cl, cm, cr = U.main_row()
@@ -445,6 +445,8 @@ def _flood_prone(shell, s, search_row, hand, chan) -> None:
                         unsafe_allow_html=True)
             _to_forecast()
 
+    st.markdown(state_strip, unsafe_allow_html=True)
+
     with st.expander("📖  How to read this map"):
         st.markdown(
             "**What this map is.** Not a forecast — there is no rain in it. It answers one "
@@ -546,7 +548,7 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                 "Live rain is read at these points, 10 days back and 7 ahead, and scored against "
                 "16 years of the same source at the same point.", "left"),
     ]
-    st.markdown(U._tiles(tiles, len(tiles)), unsafe_allow_html=True)
+    state_strip = U.statewide(tiles, len(tiles))        # drawn under the main row
 
     px = grid.to_px(sel["lat"], sel["lon"]) if sel else None
     b0 = (int(bid[px]) - 1) if (px is not None and bid[px] > 0) else None
@@ -732,6 +734,8 @@ def _catchments(shell, s, search_row, met, bid, nxt, order, sub_area, rain_pt, p
                           "rain — with local rain and the shape of the land — into flood "
                           "chances.</div>", unsafe_allow_html=True)
             _to_forecast()
+
+    st.markdown(state_strip, unsafe_allow_html=True)
 
     with st.expander("📖  How to read this page"):
         st.markdown(
