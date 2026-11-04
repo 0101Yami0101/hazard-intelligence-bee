@@ -173,6 +173,8 @@ FS_CSS = """
   .stApp:has([data-testid="stSidebar"][aria-expanded="false"]) .st-key-fs_head > div > [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child{padding-left:42px;}
 }
 .st-key-fs_days{gap:.4rem!important;}
+/* the 7-day heading: breathing room from the card above and the days below */
+.st-key-fs_days .fs-sec{padding:6px 0 5px;}
 /* a block of bars marked fs-grow spreads its rows over the spare height */
 .st-key-fs_main .fs-grow:has(> .fs-hb){display:flex;flex-direction:column;justify-content:space-evenly;}
 /* the map card's title row: its menu button no taller than the title */
