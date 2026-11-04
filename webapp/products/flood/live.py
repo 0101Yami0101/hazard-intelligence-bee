@@ -1526,6 +1526,75 @@ def _gauge_chart(r: dict, lv: dict | None, days: list[str]) -> list:
              .configure_view(strokeWidth=0)) for c in parts]
 
 
+def _gauge_chart_hourly(r: dict, lv: dict | None, rows: list, made_at: str) -> tuple:
+    """The "Last 3 days" view: every reading the gauge sent, as sent (after
+    the same spike filter as the daily highs), and our forecast of each
+    coming day's HIGH drawn across that whole day — the model forecasts a
+    day's highest reading, not the hour it comes (gauge_hourly.py). The
+    published lines are drawn only where they fall near the readings; the
+    others are named under the graph with how far away they are, so a
+    river 4 m below its line still shows its centimetres of movement.
+    Returns (chart, the lines left out)."""
+    df = pd.DataFrame(rows, columns=["t", "value"])
+    df["t"] = pd.to_datetime(df["t"])
+    now = pd.Timestamp(made_at).tz_localize(None) if made_at else df["t"].max()
+    t0 = now - pd.Timedelta(hours=72)
+    fc = _level_forecast(r)
+    fc = fc[fc["forecast"] & (fc["date"] + pd.Timedelta(days=1) > t0)] if len(fc) else fc
+    t1 = max(now, (fc["date"].max() + pd.Timedelta(days=1)) if len(fc) else now) + pd.Timedelta(hours=2)
+    xs = alt.Scale(domain=[t0.isoformat(), t1.isoformat()])
+    unit = lv["unit"] if lv else ""
+    vals = list(df["value"]) + (list(fc["lo"]) + list(fc["hi"]) if len(fc) else [])
+    lo, hi = min(vals), max(vals)
+    span = max(hi - lo, 0.2)
+    lines = _gauge_lines(lv)
+    shown = [x for x in lines if lo - span <= x[1] <= hi + span]
+    left = [x for x in lines if x not in shown]
+    for _, v, _, _ in shown:
+        lo, hi = min(lo, v), max(hi, v)
+    pad = max((hi - lo) * 0.1, 0.05)
+    ys = alt.Scale(domain=[lo - pad, hi + pad], zero=False)
+    x_ = alt.X("t:T", scale=xs, title=None, axis=alt.Axis(format="%a %H:%M", labelOverlap=True))
+    layers = [alt.Chart(df).mark_line(color=T.ACCENT_2, strokeWidth=2.2,
+                                      point=alt.OverlayMarkDef(size=26, color=T.ACCENT_2))
+              .encode(x=x_, y=alt.Y("value:Q", scale=ys, axis=Y_AXIS,
+                                    title=f"{lv['quantity'] if lv else 'reading'} ({unit})"),
+                      tooltip=[alt.Tooltip("t:T", title="reading at", format="%a %d %b, %H:%M"),
+                               alt.Tooltip("value:Q", title=f"level ({unit})", format=".2f")])]
+    if len(fc):
+        f = fc.assign(t=fc["date"], t2=fc["date"] + pd.Timedelta(days=1))
+        f["t"] = f["t"].clip(lower=t0)
+        tip = [alt.Tooltip("date:T", title="day", format="%a %d %b"),
+               alt.Tooltip("mid:Q", format=".2f", title=f"expected highest reading ({unit})"),
+               alt.Tooltip("range:N", title="likely range (8 in 10)")]
+        # the box and the line carry the same tip: left without one, the box
+        # showed its raw column names (t, lo, t2)
+        layers.append(alt.Chart(f).mark_rect(color=T.ACCENT_2, opacity=0.14)
+                      .encode(x=alt.X("t:T", scale=xs), x2="t2:T",
+                              y=alt.Y("lo:Q", scale=ys), y2="hi:Q", tooltip=tip))
+        layers.append(alt.Chart(f).mark_rule(color=T.ACCENT_2, strokeWidth=2, strokeDash=[5, 4])
+                      .encode(x=alt.X("t:T", scale=xs), x2="t2:T", y=alt.Y("mid:Q", scale=ys),
+                              tooltip=tip))
+    for label, v, col, dash in shown:
+        d = pd.DataFrame({"value": [v], "label": [label], "t": [t1]})
+        layers.append(alt.Chart(d).mark_rule(color=col, strokeWidth=1.6, strokeDash=dash)
+                      .encode(y=alt.Y("value:Q", scale=ys), tooltip="label:N"))
+        layers.append(alt.Chart(d).mark_text(align="right", dy=-6, fontSize=11, color=col)
+                      .encode(x=alt.X("t:T", scale=xs), y=alt.Y("value:Q", scale=ys), text="label:N"))
+    nw = pd.DataFrame({"t": [now], "txt": ["Now"]})
+    layers.append(alt.Chart(nw).mark_rule(color="#8b95a3", strokeDash=[4, 4])
+                  .encode(x=alt.X("t:T", scale=xs)))
+    layers.append(alt.Chart(nw).mark_text(align="left", dx=4, dy=-4, fontSize=11, color="#8b95a3",
+                                          baseline="top")
+                  .encode(x=alt.X("t:T", scale=xs), y=alt.value(0), text="txt:N"))
+    ch = (alt.layer(*layers).properties(height=280, background="transparent")
+          .configure_axis(labelColor="#8b95a3", titleColor="#8b95a3", gridColor="#8b95a333",
+                          domainColor="#8b95a366", tickColor="#8b95a366")
+          .configure_view(strokeWidth=0))
+    last = float(df["value"].iloc[-1])
+    return ch, [(lab.rsplit(" ", 1)[0], v, v - last) for lab, v, _, _ in left]
+
+
 def _board(rivers: list[dict], days: list[str]):
     """Every gauge x every day, coloured by its chance — the whole river
     picture at a glance. Clicking a row opens that gauge's graph."""
@@ -1637,6 +1706,43 @@ def _gauge_detail(snap, levels, rivers_by: dict, own) -> None:
     else:
         tiles.append(_tile("Network", r["network"], net, None, None))
     st.markdown(_tiles(tiles, 4), unsafe_allow_html=True)
+    # 30 days of daily highs, or every reading of the last 3 days (CWC gauges:
+    # NWDP's publish about 2 days late, so they have no "now" to zoom into)
+    span = "30 days"
+    if r["network"] == "CWC":
+        span = st.segmented_control(
+            "Graph", ["30 days", "Last 3 days"], default="30 days", key="flv_gspan",
+            label_visibility="collapsed",
+            help="Last 3 days: every reading the gauge sent, not one point a day.") or "30 days"
+    if span == "Last 3 days":
+        from products.flood import hourly
+        h = hourly.latest()
+        rows = ((h or {}).get("gauges") or {}).get(code) or []
+        if not rows:
+            st.info("The last 3 days of readings are not available right now"
+                    + (" for this gauge: it sent none." if h else
+                       ": the link that carries them did not answer.")
+                    + " The 30-day graph is unaffected.")
+        else:
+            ch, left = _gauge_chart_hourly(r, lv, rows, h.get("made_at", ""))
+            with st.container(key="fs_gchart"):
+                st.altair_chart(ch, width="stretch")
+            per_day = len(rows) / 3
+            st.markdown(
+                "<div class='fs-foot'>Line: every reading CWC sent, "
+                f"<b>{len(rows)}</b> in 3 days"
+                + (" — about one an hour" if per_day >= 16 else
+                   " — CWC reads this gauge only a few times a day outside the flood season "
+                   "(every hour in it)")
+                + (" · dotted, shaded: our forecast of each day's highest reading and its likely "
+                   "range, across the day it is for (it forecasts the day's high, not the hour)"
+                   if len(_level_forecast(r)) else "")
+                + (" · off the graph, from the latest reading: " + ", ".join(
+                    f"{_esc(n)} {abs(d_):,.2f} {unit} {'above' if d_ > 0 else 'below'}"
+                    for n, _, d_ in left) if left else "")
+                + f" · fetched {datetime.fromisoformat(h['made_at']):%d %b %H:%M} IST</div>",
+                unsafe_allow_html=True)
+            return
     with st.container(key="fs_gchart"):
         for ch in _gauge_chart(r, lv, days):
             st.altair_chart(ch, width="stretch")
