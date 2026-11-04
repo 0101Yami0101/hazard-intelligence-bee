@@ -322,6 +322,20 @@ FS_CSS = """
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;}
   .fs-rrow.more,.fs-rhead.more{display:grid;}
 }
+@container fsmain (min-width:761px) and (max-width:1303px){
+  /* SlideSense's forecast (its day buttons are sl_d*): the 7 days across the
+     full width in one line, as FloodSense's are; districts and roads under
+     them, side by side. Its two rows of four sit side by side, with the
+     second row's empty slot dropped and the rows sized 4 : 3. */
+  .st-key-fs_col_r:has(.st-key-sl_d0) [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_a){grid-column:1 / span 2;grid-row:1;}
+  .st-key-fs_col_r:has(.st-key-sl_d0) [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_b){grid-column:2;grid-row:2;}
+  .st-key-fs_col_r:has(.st-key-sl_d0) [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_c){grid-column:1;grid-row:2;align-self:start;}
+  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a{flex-direction:row;flex-wrap:wrap;}
+  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a > [data-testid="stElementContainer"]{flex:1 1 100%;}
+  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]{flex:4 1 0;min-width:0;}
+  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]:last-child{flex-grow:3;}
+  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a [data-testid="stColumn"]:not(:has(button)){display:none;}
+}
 @container fsmain (max-width:760px){
   [data-testid="stColumn"]:has(.st-key-fs_col_l),[data-testid="stColumn"]:has(.st-key-fs_col_m),[data-testid="stColumn"]:has(.st-key-fs_col_r){flex:1 1 100%!important;min-width:0;}
   .st-key-fs_col_r:has(.st-key-fs_r_c){display:flex;}

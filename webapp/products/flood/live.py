@@ -667,7 +667,8 @@ def _place_label(name: str, lat: float, lon: float, p: float, when: str) -> list
 
 # ── panels ───────────────────────────────────────────────────────────────────
 def _hero(val: float, scope: str, when: str, spark: str = "", more: str = "") -> str:
-    """The headline: the outlook's level word, its number, and 7 bars."""
+    """The headline: the outlook's level word and its number. The week is
+    in the day buttons beside the map, not repeated here as bars."""
     k = _band(val)
     icon = "🌧️" if k >= 2 else "🌦️" if k == 1 else "☁️"
     return (f"<div class='fs-hero' style='--c:{CHANCE_COLORS[k] if k else '#6b7a8c'};"
@@ -678,24 +679,6 @@ def _hero(val: float, scope: str, when: str, spark: str = "", more: str = "") ->
             f"<div class='fs-hero-row'><div class='fs-hero-num'>{_pct_short(val)}</div>"
             f"<div class='fs-hero-badge'>{badge('outlook', more, 'down left')}</div></div>"
             f"<div class='fs-hero-when'>{when}</div>{spark}</div>")
-
-
-def _spark(days: list[str], vals: list[float], on: int = -1) -> str:
-    """Seven bars, one per day; days 4-7 faded (weaker rain forecasts).
-    Scaled to at least 2% (the first level): a week of 0.01%-0.03% days is
-    flat and quiet, not a tall bar beside short ones."""
-    mx = max(max(vals), float(CHANCE_CUTS[0]))
-    out = []
-    for i, (d, v) in enumerate(zip(days, vals)):
-        k = _band(v)
-        col = CHANCE_COLORS[k] if k else TIERS["outlook"][2]
-        h = 5 + 42 * (v / mx)
-        cls = ("later " if i >= SURE_DAYS else "") + ("on" if i == on else "")
-        tip = f"{_day_label(d)}: {_pct(v)}" + (" · less sure (days 4–7)" if i >= SURE_DAYS else "")
-        out.append(f"<div class='fs-sb {cls}'><i class='fs-tip' data-tip='{_esc(tip)}' "
-                   f"style='height:{h:.0f}px;--b:{col}'></i>"
-                   f"<span>{datetime.fromisoformat(d).day}</span></div>")
-    return f"<div class='fs-spark'>{''.join(out)}</div>"
 
 
 def _spark_svg(hist, line: float, w: int = 104, h: int = 26) -> str:
@@ -735,8 +718,7 @@ def _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot) ->
         if nh is not None:
             vals = list(nh["arunachal_daily"])
             val = nh["arunachal_week"] if period < 0 else vals[period]
-            st.markdown(_hero(val, "somewhere in the state", _when(days, period),
-                              _spark(days, vals, period), more=_error_line(nh)),
+            st.markdown(_hero(val, "somewhere in the state", _when(days, period), more=_error_line(nh)),
                         unsafe_allow_html=True)
         if hot:
             # the colours ride with the heading: an element of its own, even an
@@ -773,8 +755,7 @@ def _place_card(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot) ->
     if nh is not None and k >= 0:
         vals = [nh["daily"][i][k] for i in range(len(days))]
         val = nh["week"][k] if period < 0 else vals[period]
-        st.markdown(_hero(val, "within ~10 km of here", _when(days, period),
-                          _spark(days, vals, period), more=_error_line(nh)),
+        st.markdown(_hero(val, "within ~10 km of here", _when(days, period), more=_error_line(nh)),
                     unsafe_allow_html=True)
     elif nh is None:
         st.info("This snapshot predates the flood-chance numbers. Run the forecast again "
@@ -944,8 +925,7 @@ def _full_panel(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot, cl
         if nh is not None:
             vals = list(nh["arunachal_daily"])
             val = nh["arunachal_week"] if period < 0 else vals[period]
-            out += _hero(val, "somewhere in the state", _when(days, period),
-                         _spark(days, vals, period), more=_error_line(nh))
+            out += _hero(val, "somewhere in the state", _when(days, period), more=_error_line(nh))
         if hot:
             out += _sec("Highest outlook", badge("outlook", where="right")) + "".join(
                 f"<div class='fsf-row' style='--c:"
@@ -963,8 +943,7 @@ def _full_panel(sel, pl, snap, period, rp, fmeta, own, river_at, levels, hot, cl
             if nh is not None and k >= 0:
                 vals = [nh["daily"][i][k] for i in range(len(days))]
                 val = nh["week"][k] if period < 0 else vals[period]
-                out += _hero(val, "within ~10 km of here", _when(days, period),
-                             _spark(days, vals, period), more=_error_line(nh))
+                out += _hero(val, "within ~10 km of here", _when(days, period), more=_error_line(nh))
             elif nh is None:
                 out += ("<div class='fs-empty'>This snapshot predates the flood-chance "
                         "numbers.</div>")

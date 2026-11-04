@@ -767,7 +767,6 @@ def render(shell) -> None:
         state_strip = U.statewide(kpis, len(kpis), long_day(di))   # drawn under the main row
 
         centre, zoom, marker, clip = frame(sel, w)
-        daynums = [datetime.fromisoformat(days[i]).day for i in fut]
         series = dcls = dweek = None            # the place's week, when it has one
         cl, cm, cr = U.main_row()
 
@@ -779,11 +778,7 @@ def render(shell) -> None:
                 panel.show(U.hero(
                     "High or above", pc(HI[n]), "of assessed land, statewide",
                     long_day(di) + later, T.CLASS_COLORS[3], T.CLASS_TEXT[3], "⛰",
-                    "sl_outlook", bars_html=U.bars(
-                        HI, daynums, [T.CLASS_COLORS[3]] * len(fut),
-                        [f"{day_name(i)}: {pc(x)} of assessed land at High or above"
-                         for i, x in zip(fut, HI)],
-                        on=n, faded=range(LATER_FROM, len(fut)), floor=0.05)))
+                    "sl_outlook"))
                 mean_mm = np.nanmean(rain, axis=1)
                 panel.show(
                     U._sec("Rain behind it", U.badge("sl_input", where="right"))
@@ -811,12 +806,7 @@ def render(shell) -> None:
                 panel.show(U.hero(
                     "High or above", pc(dweek["hi"][n]),
                     f"of {html.escape(w['name'])}'s assessed land", long_day(di) + later,
-                    T.CLASS_COLORS[3], T.CLASS_TEXT[3], "⛰", "sl_outlook",
-                    bars_html=U.bars(
-                        list(dweek["hi"]), daynums, [T.CLASS_COLORS[3]] * len(fut),
-                        [f"{day_name(i)}: {pc(x)} at High or above"
-                         for i, x in zip(fut, dweek["hi"])],
-                        on=n, faded=range(LATER_FROM, len(fut)), floor=0.05)))
+                    T.CLASS_COLORS[3], T.CLASS_TEXT[3], "⛰", "sl_outlook"))
                 # the rain points that sit inside the district; a district too
                 # small to hold one reads the point nearest its centre
                 pr, pcol, pok = grid.to_px_array(np.asarray(PTS["lat"]), np.asarray(PTS["lon"]))
@@ -867,15 +857,7 @@ def render(shell) -> None:
                         (f"Places and days at {T.CLASS_NAMES[k - 1]} have had about "
                          f"{times(lx['times_usual'])} the landslides of an average place on an "
                          f"average day (likely {rng(lx)}). Measured on {N_DATED} landslides with "
-                         "a known date, so it is a rough figure.") if lx else "",
-                        bars_html=U.bars(
-                            [float(x) for x in series], daynums,
-                            [T.CLASS_COLORS[int(x) - 1] for x in dcls],
-                            [f"{day_name(i)}: {T.CLASS_NAMES[int(x) - 1]}"
-                             + (f" · about {times(level_x(int(x))['times_usual'])} the usual"
-                                if level_x(int(x)) else "")
-                             for i, x in zip(fut, dcls)],
-                            on=n, faded=range(LATER_FROM, len(fut)), floor=TOP_CUT)))
+                         "a known date, so it is a rough figure.") if lx else ""))
                     sk = sus_level(su)
                     sr_ = MET["susceptibility"].get("success_rate", [])
                     gx = sr_[sk - 1]["lift"] if len(sr_) == 5 else None
@@ -1282,7 +1264,6 @@ def render(shell) -> None:
         st.markdown(U._tiles(kpis, len(kpis)), unsafe_allow_html=True)
 
         ahead = (sel_day.date() - date.today()).days
-        daynums = [datetime.fromisoformat(days[i]).day for i in fut]
         map_name = f"Roads by outlook · {day_name(di)}"
         cl, cm, cr = U.main_row()
 
@@ -1322,12 +1303,7 @@ def render(shell) -> None:
                 panel.show(U.hero(
                     "High or above", f"{high_km:,.0f}<small style='font-size:1.1rem;margin-left:7px'>km"
                     "</small>", "of main road, statewide", long_day(di) + later,
-                    T.CLASS_COLORS[3], T.CLASS_TEXT[3], "🛣️", "sl_outlook",
-                    bars_html=U.bars(
-                        RKM, daynums, [T.CLASS_COLORS[3]] * len(fut),
-                        [f"{day_name(i)}: {x:,.0f} km at High or above"
-                         for i, x in zip(fut, RKM)],
-                        on=n, faded=range(LATER_FROM, len(fut)), floor=50.0)))
+                    T.CLASS_COLORS[3], T.CLASS_TEXT[3], "🛣️", "sl_outlook"))
                 rows_ = ""
                 for h in spots[:5]:
                     near, dkm = G.nearest_place(h["lat"], h["lon"], PLACES)
