@@ -17,7 +17,13 @@ numpy and folium work — only the one actually opened.
 from __future__ import annotations
 
 import importlib
+import os
 from dataclasses import dataclass
+
+# A module shown as "under development" is listed but cannot be opened. On our
+# own machines SLOPESENSE_SHOW_WIP=1 opens it anyway, so work on it goes on;
+# the public app never sets it.
+SHOW_WIP = os.environ.get("SLOPESENSE_SHOW_WIP") == "1"
 
 
 @dataclass(frozen=True)
@@ -29,7 +35,7 @@ class Product:
     tagline: str       # one line, on the card
     blurb: str         # two or three sentences, on the card
     accent: str
-    status: str        # "live" | "building" | "foundation"
+    status: str        # "live" | "building" | "development" | "foundation"
     kind: str = "product"   # "product" cards lead, "foundation" sits beneath
     # The session-state key the module's OWN sidebar loop reads/writes for its
     # current tab. Each module picked its own name historically (SlideSense:
@@ -51,8 +57,9 @@ class Product:
     def available(self) -> bool:
         # A "building" module opens too: its tile carries the 🔧 Building pill
         # and its pages say what is not finished. Only "foundation"-style
-        # placeholders without a page would stay shut.
-        return self.status in ("live", "building")
+        # placeholders without a page would stay shut, and a module marked
+        # "development" (listed, not opened yet) unless SHOW_WIP is set.
+        return self.status in ("live", "building") or (self.status == "development" and SHOW_WIP)
 
     def render(self, shell) -> None:
         importlib.import_module(f"products.{self.slug}.view").render(shell)
@@ -99,7 +106,8 @@ REGISTRY: list[Product] = [
               "Ranks small catchments and districts for conservation work, each "
               "with its main cause and how firm the ranking is.",
         accent="#e0a458",
-        status="building",
+        # Shown but closed on the public app for now (user, 2026-11-04).
+        status="development",
         nav_key="er_view",
         region="Assam"),
     Product(

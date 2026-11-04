@@ -105,6 +105,11 @@ def _set_page(nav_key: str, label: str) -> None:
 if "module" not in st.session_state and st.query_params.get("m"):
     st.session_state.module = st.query_params["m"]
 product = P.get(st.session_state.get("module"))
+# A module that cannot be opened yet (status "development") is not reachable
+# by a saved link either: back to the home page.
+if product is not None and not product.available:
+    st.session_state.pop("module", None)
+    product = None
 
 
 # ─────────────────────────── landing ─────────────────────────────────────────
@@ -123,7 +128,9 @@ def _tile(p: P.Product) -> None:
     ready = p.available
     pill = ("<span class='tile-pill live'>Live</span>" if p.status == "live"
             else "<span class='tile-pill wip'>🔧 Building</span>"
-            if p.status == "building" else "")
+            if p.status == "building"
+            else "<span class='tile-pill wip'>🚧 Under development</span>"
+            if p.status == "development" else "")
     with st.container(border=False, key=f"tile_{p.slug}"):
         st.markdown(
             f"<div class='tile' style='--tile:{p.accent}'>"
@@ -132,9 +139,10 @@ def _tile(p: P.Product) -> None:
             f"<div class='tile-name'>{p.name}</div>"
             f"<div class='tile-tag'>{p.tagline}</div>"
             "</div>", unsafe_allow_html=True)
-        st.button("Open" if ready else "Not ready", key=f"go_{p.slug}",
+        st.button("Open" if ready else "Under development" if p.status == "development"
+                  else "Not ready", key=f"go_{p.slug}",
                   width="stretch", type="primary" if ready else "secondary",
-                  on_click=_open, args=(p.slug,))
+                  disabled=not ready, on_click=_open, args=(p.slug,))
 
 
 def _ghost_tile() -> None:
