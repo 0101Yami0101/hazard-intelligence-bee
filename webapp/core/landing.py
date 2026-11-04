@@ -85,9 +85,12 @@ def _ic(name: str) -> str:
 
 @st.cache_data(show_spinner=False)
 def n_sources() -> int | None:
+    """Sources HELD: the home page says "lined up", which a source checked
+    but not yet pulled is not."""
     p = ASSETS / "backbone" / "catalogue.json"
     try:
-        return int(json.loads(p.read_text(encoding="utf-8"))["n_sources"])
+        c = json.loads(p.read_text(encoding="utf-8"))
+        return int(c.get("n_held", c["n_sources"]))
     except Exception:
         return None
 

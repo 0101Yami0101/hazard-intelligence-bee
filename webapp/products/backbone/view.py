@@ -276,8 +276,9 @@ def _arch_lanes(cat: dict, pipe: dict, tl: dict, ship_mb: float,
                     "API, because the staleness is invisible."}])
     return [
         {"key": "sources", "name": "Sources", "nodes": [
-            {"n": "External archives", "d": f"{cat['n_sources']} sources · "
-                                            f"{cat['total_bytes']/1e9:.1f} GB",
+            {"n": "External archives", "d": f"{cat.get('n_held', cat['n_sources'])} sources held · "
+                                            f"{cat['total_bytes']/1e9:.1f} GB"
+                                            + (f" · {cat['n_ready']} more ready" if cat.get("n_ready") else ""),
              "s": BUILT,
              "t": "NASA, Copernicus, ESA, GSI, HydroSHEDS, OpenStreetMap and "
                   "the state portals."},
@@ -603,7 +604,11 @@ def render(shell) -> None:
                     "from</div>", unsafe_allow_html=True)
 
         k = st.columns(4)
-        k[0].metric("Sources", f"{CAT['n_sources']}")
+        # Held = pulled into the raw store. Ready = checked live, reachable,
+        # not pulled yet (scripts/fetch/ready_sources.py).
+        k[0].metric("Sources", f"{CAT['n_sources']}",
+                    f"{CAT['n_held']} held · {CAT['n_ready']} ready to pull"
+                    if CAT.get("n_ready") else None, delta_color="off", delta_arrow="off")
         k[1].metric("Groups", f"{len(CAT['groups'])}")
         k[2].metric("Raw data held", f"{CAT['total_bytes']/1e9:.1f} GB")
         k[3].metric("Files", f"{CAT['total_files']:,}")
@@ -630,10 +635,11 @@ def render(shell) -> None:
         multi = any(len(s.get("regions", [])) > 1 or s.get("regions", ["arunachal"]) != ["arunachal"]
                     for g in CAT["groups"] for s in g["sources"])
         rows = [{"Group": g["title"], "Source": s["source"],
-                 **({"States": " · ".join(r.title() for r in s.get("regions", ["arunachal"]))}
+                 **({"States": " · ".join(r.title() for r in s.get("regions") or ["—"])}
                     if multi else {}),
                  "Files": s["n_files"], "Size (MB)": round(s["bytes"]/1e6, 1),
-                 "Fetched": s["fetched"] or "—"}
+                 "Fetched": s["fetched"] or ("ready, not pulled" if s.get("status") == "ready"
+                                             else "—")}
                 for g in CAT["groups"] for s in g["sources"]]
         st.dataframe(
             pd.DataFrame(rows).sort_values("Size (MB)", ascending=False),
