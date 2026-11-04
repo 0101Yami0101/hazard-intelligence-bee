@@ -25,6 +25,32 @@ from dataclasses import dataclass
 # the public app never sets it.
 SHOW_WIP = os.environ.get("SLOPESENSE_SHOW_WIP") == "1"
 
+# ── THE SoilSense SWITCH ─────────────────────────────────────────────────────
+# True: SoilSense opens (🔧 Building). False: listed as "🚧 Under development",
+# not openable. Two ways to flip it:
+#   1. here, then push (a code change);
+#   2. FASTER, no push: in the hosted app's Settings → Secrets add the line
+#        SOILSENSE_OPEN = false      (or true)
+#      it wins over the line below and takes effect on the app's next restart.
+# An environment variable SOILSENSE_OPEN=0/1 does the same on our own machines.
+SOILSENSE_OPEN = True
+
+
+def _switch(name: str, default: bool) -> bool:
+    v = os.environ.get(name)
+    if v is None:
+        try:
+            import streamlit as st
+            v = st.secrets.get(name)
+        except Exception:                                   # noqa: BLE001
+            v = None                    # no secrets file: the line in the code
+    if v is None:
+        return default
+    return str(v).strip().lower() in ("1", "true", "on", "yes")
+
+
+SOILSENSE_OPEN = _switch("SOILSENSE_OPEN", SOILSENSE_OPEN)
+
 
 @dataclass(frozen=True)
 class Product:
@@ -106,8 +132,8 @@ REGISTRY: list[Product] = [
               "Ranks small catchments and districts for conservation work, each "
               "with its main cause and how firm the ranking is.",
         accent="#e0a458",
-        # Shown but closed on the public app for now (user, 2026-11-04).
-        status="development",
+        # Open or closed by SOILSENSE_OPEN at the top of this file.
+        status="building" if SOILSENSE_OPEN else "development",
         nav_key="er_view",
         region="Assam"),
     Product(

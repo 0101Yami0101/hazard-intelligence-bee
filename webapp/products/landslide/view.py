@@ -470,6 +470,21 @@ def render(shell) -> None:
             rkm.append(float(km[sample_classes(cl, la, lo) >= 4].sum()) if ROADS else 0.0)
         return hi, vh, rkm
 
+    @st.cache_data(show_spinner=False, max_entries=3)
+    def week_worst(tag: str):
+        """The whole week at once: each cell's WORST level over the 7 days,
+        then the same three figures as week_numbers on it — the share of land
+        at High or above on at least one day, and so on. Never an average: an
+        average of a quiet week with one bad day would hide the bad day."""
+        cl = week_classes(tag).max(axis=0)
+        a = cl[cl > 0]
+        rkm = 0.0
+        if ROADS:
+            _, la, lo, km, _, _ = road_chunks()
+            rkm = float(km[sample_classes(cl, la, lo) >= 4].sum())
+        return (cl, float((a >= 4).mean()) if a.size else 0.0,
+                float((a == 5).mean()) if a.size else 0.0, rkm)
+
     # ─────────────────────── small things every page uses ────────────────────
     def pc(x: float) -> str:
         """A share of land. One decimal while it is under 10%: most days the
@@ -496,9 +511,14 @@ def render(shell) -> None:
         return st.session_state.day_i, fut.index(st.session_state.day_i)
 
     def day_buttons(notes: list[str], colors: list[str], head: str,
-                    tips: list[str] | None = None) -> None:
+                    tips: list[str] | None = None, week: bool | None = None) -> None:
         """The day picker, in the same clothes as FloodSense's: four to a row,
-        a coloured top edge, the later days dashed."""
+        a coloured top edge, the later days dashed.
+
+        `week` (the Forecast page): True while the headline card and the map
+        show the whole week, so no day is lit; with a day picked, a "Whole
+        week" button fills the empty eighth slot (U.week_back) and a second click on
+        the lit day goes back too. None on the Roads page: always one day."""
         css = ""
         for j, col in enumerate(colors):
             css += f".st-key-sl_d{j} button{{border-top:3px solid {col}!important}}"
@@ -509,16 +529,25 @@ def render(shell) -> None:
         st.markdown(f"<style>{css}</style>{head}", unsafe_allow_html=True)
         for row in range(0, len(fut), 4):
             cols = st.columns(4, gap="small")
+            if week is False and len(fut) - row < 4:
+                with cols[3]:
+                    if U.week_back("sl_week_btn"):
+                        st.session_state.sl_week = True
+                        st.rerun()
             for col, j in zip(cols, range(row, min(row + 4, len(fut)))):
                 with col:
                     tip = (tips[j] if tips else "")
                     if j >= LATER_FROM:
                         tip = (tip + " · " if tip else "") + LATER_HELP
+                    lit = fut[j] == st.session_state.day_i and not week
                     if st.button(f"{day_name(fut[j])}  \n**{notes[j]}**", key=f"sl_d{j}",
                                  width="stretch", help=tip or None,
-                                 type="primary" if fut[j] == st.session_state.day_i
-                                 else "secondary"):
-                        st.session_state.day_i = fut[j]
+                                 type="primary" if lit else "secondary"):
+                        if lit and week is False:
+                            st.session_state.sl_week = True
+                        else:
+                            st.session_state.day_i = fut[j]
+                            st.session_state.sl_week = False
                         st.rerun()
 
     def search_row():
@@ -729,18 +758,28 @@ def render(shell) -> None:
         WK = week_classes(RTAG)
         HI, VH, RKM = week_numbers(RTAG)
         cls, tri_pts = WK[n], trig[di]
+        # The whole week until a day is picked, as on FloodSense: the card,
+        # the map and the figures then read each square's worst day.
+        wk = st.session_state.get("sl_week", True)
+        if wk:
+            cls, hi_n, vh_n, rkm_n = week_worst(RTAG)
+            dn, ln = "next 7 days", f"Next 7 days · {d0:%d %b} – {d1:%d %b}"
+        else:
+            hi_n, vh_n, rkm_n = HI[n], VH[n], RKM[n]
+            dn, ln = day_name(di), long_day(di)
         dtab = district_table(cls)
         w = where(sel)
-        later = " · less sure this far ahead" if n >= LATER_FROM else ""
+        later = " · less sure this far ahead" if n >= LATER_FROM and not wk else ""
+        that_day = ("on at least one day" if wk else "today" if n == 0 else "that day")
 
         # ── KPI strip: Arunachal as a whole, that day ────────────────────────
-        n_wet = int((tri_pts >= 0.90).sum())
+        n_wet = int(((trig[fut] >= 0.90).any(axis=0) if wk else tri_pts >= 0.90).sum())
         kpis = [
-            U._tile("Land at High or above", pc(HI[n]), f"of assessed land · {day_name(di)}",
+            U._tile("Land at High or above", pc(hi_n), f"of assessed land · {dn}",
                     "sl_outlook", T.CLASS_TEXT[3],
-                    "Share of the land the model scores that is at High or Very High that "
-                    "day. A share of land, not a chance.", "right"),
-            U._tile("Very High", pc(VH[n]), f"of assessed land · {day_name(di)}", "sl_outlook",
+                    f"Share of the land the model scores that is at High or Very High {that_day}"
+                    ". A share of land, not a chance.", "right"),
+            U._tile("Very High", pc(vh_n), f"of assessed land · {dn}", "sl_outlook",
                     T.CLASS_TEXT[4], "The top level alone."),
         ]
         if len(dtab):
@@ -749,26 +788,51 @@ def render(shell) -> None:
                                 f"{html.escape(top_d['District'])} · at High or above",
                                 "sl_outlook", None,
                                 "The district with the largest share of its own assessed land "
-                                "at High or above that day."))
+                                f"at High or above {that_day}."))
         if ROADS:
-            kpis.append(U._tile("Road at High or above", f"{RKM[n]:,.0f}<small> km</small>",
-                                f"main roads · {day_name(di)}", "sl_outlook", None,
+            kpis.append(U._tile("Road at High or above", f"{rkm_n:,.0f}<small> km</small>",
+                                f"main roads · {dn}", "sl_outlook", None,
                                 "Kilometres of trunk, primary and secondary road crossing "
-                                "ground at High or above. The Roads page shows where."))
+                                f"ground at High or above {that_day}. The Roads page shows "
+                                "where."))
         kpis += [
             U._tile("Unusually wet points", f"{n_wet}<small>/{len(tri_pts)}</small>",
-                    f"rain points · {day_name(di)}", "sl_input", "#7fd4f0" if n_wet else None,
+                    f"rain points · {dn}", "sl_input", "#7fd4f0" if n_wet else None,
                     "Rain points whose 3- and 7-day rain sits in the wettest 10% of "
-                    "everything that point has recorded since 2010.", "left"),
-            U._tile("Wettest point", f"{np.nanmax(rain[di]):.0f}<small> mm</small>",
-                    f"rain · {day_name(di)}", "sl_input", None,
-                    "The most rain at any one rain point that day.", "left"),
+                    f"everything that point has recorded since 2010, {that_day}.", "left"),
+            U._tile("Wettest point", f"{np.nanmax(rain[fut] if wk else rain[di]):.0f}"
+                    "<small> mm</small>", "one day's rain · this week" if wk
+                    else f"rain · {day_name(di)}", "sl_input", None,
+                    "The most rain at any one rain point "
+                    + ("on any one day of the week." if wk else "that day."), "left"),
         ]
-        state_strip = U.statewide(kpis, len(kpis), long_day(di))   # drawn under the main row
+        state_strip = U.statewide(kpis, len(kpis), ln)   # drawn under the main row
 
         centre, zoom, marker, clip = frame(sel, w)
         series = dcls = dweek = None            # the place's week, when it has one
         cl, cm, cr = U.main_row()
+
+        # ── the 7-day picker: under the headline in the left column, in view
+        #    without a scroll (2026-11-04; it used to sit under the map) ────
+        def picker() -> None:
+            if series is not None:
+                notes = [times(level_x(int(x))["times_usual"]) if level_x(int(x))
+                         else LEVEL_SHORT[int(x) - 1] for x in dcls]
+                cols_ = [T.CLASS_COLORS[int(x) - 1] for x in dcls]
+                tips = [T.CLASS_NAMES[int(x) - 1] for x in dcls]
+                scope = "times the usual, at this place" if TU else "level at this place"
+            elif dweek is not None:
+                notes, cols_, tips = [pc(x) for x in dweek["hi"]], [T.CLASS_COLORS[3]] * len(fut), None
+                scope = "share of the district at High+"
+            else:
+                # ⚠️ The buttons must ALWAYS say which of these they show. They
+                # used to fall back to the statewide share in silence, with
+                # nothing on screen naming a place.
+                notes, cols_, tips = [pc(x) for x in HI], [T.CLASS_COLORS[3]] * len(fut), None
+                scope = "share of the state at High+"
+            with st.container(key="fs_days"):
+                day_buttons(notes, cols_, U._sec("7 days", U.badge("sl_outlook", where="right"),
+                                                 note=scope), tips, week=wk)
 
         # ── left: the place, the district, or the state ─────────────────────
         panel = U.Panel(sel)
@@ -776,17 +840,31 @@ def render(shell) -> None:
             if w["kind"] == "none":
                 U.state_title()
                 panel.show(U.hero(
-                    "High or above", pc(HI[n]), "of assessed land, statewide",
-                    long_day(di) + later, T.CLASS_COLORS[3], T.CLASS_TEXT[3], "⛰",
-                    "sl_outlook"))
+                    "High or above", pc(hi_n),
+                    "of assessed land on at least one day" if wk
+                    else "of assessed land, statewide",
+                    ln + later, T.CLASS_COLORS[3], T.CLASS_TEXT[3], "⛰", "sl_outlook",
+                    "Each square counted at its worst day of the 7: never an average, which "
+                    "would hide one bad day in a quiet week." if wk else ""))
+                picker()
                 mean_mm = np.nanmean(rain, axis=1)
+                wet_d = fut[int(np.nanargmax(mean_mm[fut]))]
                 panel.show(
                     U._sec("Rain behind it", U.badge("sl_input", where="right"))
                     + U._tiles([
+                        U._tile("Rain, next 7 days", f"{mean_mm[fut].sum():.0f}"
+                                "<small> mm</small>", "forecast · state average", None, None,
+                                "The week's rain, averaged over the rain points.", "right")
+                        if wk else
                         U._tile("Average rain", f"{mean_mm[di]:.0f}<small> mm</small>",
                                 f"over {len(PTS['lat'])} points · {day_name(di)}", None, None,
                                 "The plain average of that day's rain at the rain points.",
                                 "right"),
+                        U._tile("Wettest day", f"{mean_mm[wet_d]:.0f}<small> mm</small>",
+                                f"{day_name(wet_d)} · state average", None, None,
+                                "The day of the week with the most rain, averaged over the "
+                                "rain points.", "left")
+                        if wk else
                         U._tile("Typical rain vs normal",
                                 f"{100 * float(np.nanmedian(tri_pts)):.0f}<small>/100</small>",
                                 "50 is an ordinary monsoon day", None, None,
@@ -803,10 +881,20 @@ def render(shell) -> None:
                 cnt = np.array([np.bincount(c_[w["mask"]], minlength=6) for c_ in WK])
                 tot = np.maximum(cnt[:, 1:].sum(axis=1), 1)
                 dweek = {"hi": (cnt[:, 4] + cnt[:, 5]) / tot, "vh": cnt[:, 5] / tot}
+                if wk:      # the district's squares at their worst day of the 7
+                    cw = np.bincount(cls[w["mask"]], minlength=6)
+                    tw = max(int(cw[1:].sum()), 1)
+                    d_hi, d_vh = (cw[4] + cw[5]) / tw, cw[5] / tw
+                else:
+                    cw, d_hi, d_vh = cnt[n], dweek["hi"][n], dweek["vh"][n]
                 panel.show(U.hero(
-                    "High or above", pc(dweek["hi"][n]),
-                    f"of {html.escape(w['name'])}'s assessed land", long_day(di) + later,
-                    T.CLASS_COLORS[3], T.CLASS_TEXT[3], "⛰", "sl_outlook"))
+                    "High or above", pc(d_hi),
+                    f"of {html.escape(w['name'])}'s assessed land"
+                    + (", on at least one day" if wk else ""), ln + later,
+                    T.CLASS_COLORS[3], T.CLASS_TEXT[3], "⛰", "sl_outlook",
+                    "Each square counted at its worst day of the 7: never an average."
+                    if wk else ""))
+                picker()
                 # the rain points that sit inside the district; a district too
                 # small to hold one reads the point nearest its centre
                 pr, pcol, pok = grid.to_px_array(np.asarray(PTS["lat"]), np.asarray(PTS["lon"]))
@@ -820,30 +908,43 @@ def render(shell) -> None:
                 dweek["trig"] = trig[:, pj].mean(axis=1)
                 pts_note = (f"average of {len(pj)} rain points" if len(pj) > 1
                             else "nearest rain point")
-                peak = int(np.nonzero(cnt[n, 1:])[0].max()) if cnt[n, 1:].any() else 0
+                peak = int(np.nonzero(cw[1:])[0].max()) if cw[1:].any() else 0
+                d_tw = fut[int(np.argmax(dweek["trig"][fut]))]   # its wettest-scored day
                 panel.show(U._tiles([
-                    U._tile("Very High", pc(dweek["vh"][n]), "of its assessed land",
+                    U._tile("Very High", pc(d_vh), "of its assessed land"
+                            + (" · any day" if wk else ""),
                             "sl_outlook", T.CLASS_TEXT[4], where="right"),
-                    U._tile("Highest level", T.CLASS_NAMES[peak], "anywhere in the district",
+                    U._tile("Highest level", T.CLASS_NAMES[peak], "anywhere in the district"
+                            + (" · this week" if wk else ""),
                             "sl_outlook", T.CLASS_TEXT[peak], where="left"),
-                    U._tile("Rain that day", f"{dweek['rain'][di]:.0f}<small> mm</small>",
-                            pts_note, "sl_input", None, where="right"),
-                    U._tile("Rain vs normal", f"{100 * float(dweek['trig'][di]):.0f}<small>/100</small>",
-                            pts_note, "sl_input", None,
+                    U._tile("Rain, next 7 days" if wk else "Rain that day",
+                            f"{(dweek['rain'][fut].sum() if wk else dweek['rain'][di]):.0f}"
+                            "<small> mm</small>", pts_note, "sl_input", None, where="right"),
+                    U._tile("Rain vs normal",
+                            f"{100 * float(dweek['trig'][d_tw if wk else di]):.0f}<small>/100</small>",
+                            f"its wettest day · {day_name(d_tw)}" if wk else pts_note,
+                            "sl_input", None,
                             "Where the 3- and 7-day rain sits among everything those rain "
-                            "points have recorded. 90 is wetter than about 90% of their days.",
+                            "points have recorded. 90 is wetter than about 90% of their days."
+                            + (" Shown for the week's highest-scoring day." if wk else ""),
                             "left")], 2, grow=True))
             else:
                 U.place_title(sel, place_sub(sel))
                 if w["kind"] == "outside":
                     panel.show(EMPTY_OUTSIDE)
+                    picker()
                 elif w["kind"] == "unassessed":
                     panel.show(EMPTY_UNASSESSED)
+                    picker()
                 else:
                     su, j = w["su"], w["j"]
                     series = np.array([su * trig[i][j] for i in fut], dtype=np.float32)
                     dcls = fc.classify(series)
-                    k = int(dcls[n])
+                    # the week: its worst day (the first, if several tie) — the
+                    # tiles then describe that day's rain
+                    pd_ = int(np.argmax(dcls)) if wk else n
+                    pdi = fut[pd_]
+                    k = int(dcls[pd_])
                     lx = level_x(k)
                     where_ = "here" if w["dcells"] <= 0 else "on the nearest slope"
                     panel.show(U.hero(
@@ -851,17 +952,20 @@ def render(shell) -> None:
                         (times(lx["times_usual"]) + "<small style='font-size:1.05rem;"
                          "margin-left:8px;letter-spacing:0'>the usual</small>") if lx
                         else T.CLASS_NAMES[k - 1],
-                        f"landslide outlook {where_}",
-                        long_day(di) + later, T.CLASS_COLORS[k - 1], T.CLASS_TEXT[k - 1], "⛰",
+                        f"landslide outlook {where_}" + (" · its worst day" if wk else ""),
+                        (f"Next 7 days · worst day: {day_name(pdi)}" if wk else long_day(di) + later),
+                        T.CLASS_COLORS[k - 1], T.CLASS_TEXT[k - 1], "⛰",
                         "sl_outlook",
                         (f"Places and days at {T.CLASS_NAMES[k - 1]} have had about "
                          f"{times(lx['times_usual'])} the landslides of an average place on an "
                          f"average day (likely {rng(lx)}). Measured on {N_DATED} landslides with "
                          "a known date, so it is a rough figure.") if lx else ""))
+                    picker()
                     sk = sus_level(su)
                     sr_ = MET["susceptibility"].get("success_rate", [])
                     gx = sr_[sk - 1]["lift"] if len(sr_) == 5 else None
-                    rx = rain_x(float(tri_pts[j]))
+                    tp = float(trig[pdi][j])
+                    rx = rain_x(tp)
                     panel.show(U._tiles([
                         U._tile("This ground", times(gx) if gx is not None else f"{su:.2f}",
                                 "the landslides of average ground · every day" if gx is not None
@@ -873,22 +977,26 @@ def render(shell) -> None:
                                  if gx is not None else "") +
                                 "From terrain, soil, rock and land cover — no rainfall at all.",
                                 "right"),
-                        U._tile("Rain today" if n == 0 else "Rain that day",
+                        U._tile(f"Rain, {day_name(pdi)}" if wk
+                                else "Rain today" if n == 0 else "Rain that day",
                                 times(rx["times_usual"]) if rx
-                                else f"{100 * float(tri_pts[j]):.0f}<small>/100</small>",
+                                else f"{100 * tp:.0f}<small>/100</small>",
                                 "landslides against a usual day here" if rx
                                 else "3- and 7-day rain, for this spot", "sl_input", None,
                                 (f"With rain this unusual, landslides have been about "
                                  f"{times(rx['times_usual'])} as common as on a usual day at the "
                                  f"same place (likely {rng(rx)}; {rx['landslides']} of {N_DATED} "
                                  "dated landslides fell on such days). " if rx else "") +
-                                f"Rain score {100 * float(tri_pts[j]):.0f} of 100: where the last 3 "
+                                f"Rain score {100 * tp:.0f} of 100: where the last 3 "
                                 "and 7 days' rain sits among everything this spot has recorded.",
                                 "left"),
+                        U._tile("Rain, next 7 days", f"{rain[fut, j].sum():.0f}<small> mm</small>",
+                                "forecast · here", "sl_input", None, where="right") if wk else
                         U._tile("Rain that day", f"{rain[di, j]:.0f}<small> mm</small>",
                                 day_name(di), "sl_input", None, where="right"),
-                        U._tile("Rain, 7 days", f"{rain[max(di - 6, 0):di + 1, j].sum():.0f}"
-                                "<small> mm</small>", "the week ending that day", "sl_input",
+                        U._tile("Rain, 7 days", f"{rain[max(pdi - 6, 0):pdi + 1, j].sum():.0f}"
+                                "<small> mm</small>", f"the week ending {day_name(pdi)}"
+                                if wk else "the week ending that day", "sl_input",
                                 None, where="left")], 2, grow=True) + snap_foot(w))
 
         # ── centre: the map ──────────────────────────────────────────────────
@@ -899,12 +1007,13 @@ def render(shell) -> None:
         assessed = shown > 0
         shares = [float((shown[assessed] == i).mean()) if assessed.any() else 0
                   for i in range(1, 6)]
-        map_name = f"Landslide outlook · {day_name(di)}"
+        map_name = f"Landslide outlook · {dn}"
         with cm, st.container(key="fs_col_m"):
             with st.container(border=True, key="fs_mapcard"):
                 U.map_title(map_name,
                             U.badge("sl_outlook", "Colour: the level of each ~550 m square "
-                                    "that day.", "down"),
+                                    + ("on its worst day of the 7." if wk else "that day."),
+                                    "down"),
                             right=dim_toggle("sl_dim"), ratio=(4, 2))
                 dim = "2D"
                 img = None if s.bare else M.rgba_overlay(shown, T.CLASS_COLORS)
@@ -997,7 +1106,9 @@ def render(shell) -> None:
                         tip=(("The × beside each level: how many times the landslides of an "
                               "average place and day, measured on dated landslides. "
                               if (TU or {}).get("levels") else "") +
-                             "Each ~550 m square's level that day. The share is of "
+                             "Each ~550 m square's level "
+                             + ("on its worst day of the 7" if wk else "that day")
+                             + ". The share is of "
                              + (f"{w['name']}'s" if clip is not None else "the state's")
                              + " assessed land. Blank: ice, open water or ground flatter than "
                              "10°, which the model does not score. The fine texture is terrain "
@@ -1010,37 +1121,33 @@ def render(shell) -> None:
 
         # ── right: the day picker, districts to watch, roads ────────────────
         with cr, st.container(key="fs_col_r"):
-            if series is not None:
-                notes = [times(level_x(int(x))["times_usual"]) if level_x(int(x))
-                         else LEVEL_SHORT[int(x) - 1] for x in dcls]
-                cols_ = [T.CLASS_COLORS[int(x) - 1] for x in dcls]
-                tips = [T.CLASS_NAMES[int(x) - 1] for x in dcls]
-                scope = "times the usual, at this place" if TU else "level at this place"
-            elif dweek is not None:
-                notes, cols_, tips = [pc(x) for x in dweek["hi"]], [T.CLASS_COLORS[3]] * len(fut), None
-                scope = "share of the district at High+"
-            else:
-                # ⚠️ The buttons must ALWAYS say which of these they show. They
-                # used to fall back to the statewide share in silence, with
-                # nothing on screen naming a place.
-                notes, cols_, tips = [pc(x) for x in HI], [T.CLASS_COLORS[3]] * len(fut), None
-                scope = "share of the state at High+"
-            with st.container(key="fs_r_a"):
-                day_buttons(notes, cols_, U._sec("7 days", U.badge("sl_outlook", where="left"),
-                                                 note=scope), tips)
             with st.container(key="fs_r_b"):
                 st.markdown(U._sec("Districts to watch", U.badge("sl_outlook", where="left"),
-                                   note=day_name(di)), unsafe_allow_html=True)
+                                   note=dn), unsafe_allow_html=True)
                 district_picks(dtab, WATCH_N)
                 st.markdown("<div class='fs-foot'>Share of each district at High or above "
                             + U._i("Of the land the model scores inside each district's own "
                                    "outline. Click one to open it.", "left") + "</div>",
                             unsafe_allow_html=True)
             with st.container(key="fs_r_c"):
-                st.markdown(U._sec("Roads", U.badge("sl_outlook", where="left"))
-                            + "<div class='fs-foot' style='margin:0 0 8px'>"
-                            + (f"{RKM[n]:,.0f} km of main road cross ground at High or above "
-                               f"{'today' if day_name(di) == 'Today' else 'that day'}."
+                # The network by level that day, as on the Roads page: the box
+                # stood almost empty with one sentence and a button (2026-11-04).
+                bars = ""
+                if ROADS:
+                    _, rla, rlo, rkm_, _, _ = road_chunks()
+                    rc = sample_classes(cls, rla, rlo)
+                    by_lvl = [float(rkm_[rc == i + 1].sum()) for i in range(5)]
+                    bars = U.hbars(
+                        [(T.CLASS_NAMES[i], by_lvl[i], f"{by_lvl[i]:,.0f}", T.CLASS_COLORS[i],
+                          f"{by_lvl[i]:,.0f} km of main road crosses ground at "
+                          f"{T.CLASS_NAMES[i]} {that_day}.")
+                         for i in range(4, -1, -1)], max(by_lvl) or 1.0)
+                st.markdown(U._sec("Roads", U.badge("sl_outlook", where="left"),
+                                   note="km of main road" if ROADS else "")
+                            + bars
+                            + "<div class='fs-foot' style='margin:6px 0 8px'>"
+                            + (f"{rkm_n:,.0f} km of main road cross ground at High or above "
+                               f"{that_day}."
                                if ROADS else "Which stretches, and how many kilometres.")
                             + "</div>", unsafe_allow_html=True)
                 to_view("Roads", "🛣️  Open road exposure", "sl_to_roads")
@@ -1105,13 +1212,15 @@ def render(shell) -> None:
         # ── folded away: every district, how to read ─────────────────────────
         # The district table and its CSV are the one export an operations
         # office actually asked for.
-        with st.expander(f"📋  All districts — table · {sel_day.strftime('%d %b')}"):
+        with st.expander("📋  All districts — table · "
+                         + ("next 7 days, worst day" if wk else sel_day.strftime('%d %b'))):
             st.dataframe(dtab, width="stretch", hide_index=True, height=340,
                          column_config={"High+ %": st.column_config.ProgressColumn(
                              "High+ %", min_value=0, max_value=100, format="%.1f%%")})
             st.download_button("⬇️  District outlook (CSV)",
                                dtab.to_csv(index=False).encode(),
-                               f"slidesense_{days[di]}.csv", "text/csv")
+                               f"slidesense_{'week_' + days[fut[0]] if wk else days[di]}.csv",
+                               "text/csv")
             st.caption("Each district's figures are for the land the model scores inside "
                        "its own outline.")
 
@@ -1220,6 +1329,10 @@ def render(shell) -> None:
             r_assessed = float(sum(r_km_by_class))
             worst_i = int(np.argmax(r_cls))
             wk_ = int(r_cls[worst_i])
+            # the route's own km at High or above, each day: the day buttons
+            # show the route when one is picked, never the network in silence
+            r_hi_days = [float((sample_classes(WK[j], r_la, r_lo) >= 4).sum() * step)
+                         for j in range(len(fut))]
             kpis = [
                 U._tile("Route length", f"{route_km:,.0f}<small> km</small>",
                         "by mapped road", None, None,
@@ -1233,8 +1346,6 @@ def render(shell) -> None:
                 U._tile("Worst point", T.CLASS_NAMES[wk_ - 1] if wk_ else "—",
                         f"at km {r_at[worst_i]:.0f}", "sl_outlook",
                         T.CLASS_TEXT[wk_ - 1] if wk_ else None, where="left"),
-                U._tile("Network at High or above", f"{high_km:,.0f}<small> km</small>",
-                        f"all main roads · {day_name(di)}", "sl_outlook", None, where="left"),
             ]
         else:
             jw = int(np.argmax(RKM))
@@ -1261,7 +1372,28 @@ def render(shell) -> None:
                         "Trunk, primary and secondary road from OpenStreetMap. The rest "
                         "crosses ground the model does not score.", "left"),
             ]
-        st.markdown(U._tiles(kpis, len(kpis)), unsafe_allow_html=True)
+        # Under the main row, in a frame that says which it is: the whole
+        # network (the page's own accent) or the picked route (amber). The
+        # strip used to sit above the map and change meaning with no label
+        # when a route was picked (2026-11-04).
+        if route:
+            state_strip = U.statewide(
+                kpis, len(kpis), long_day(di),
+                title=(f"This route · {html.escape(U._clean(p_from['label']))} → "
+                       f"{html.escape(U._clean(p_to['label']))}"),
+                pill="Current route · changes with From and To", tone="#e8b04a")
+        else:
+            state_strip = U.statewide(kpis, len(kpis), long_day(di), title="Whole network",
+                                      pill="All main roads · statewide")
+
+        def picker() -> None:
+            if route:
+                notes, scope = [f"{k:,.0f} km" for k in r_hi_days], "route km at High+"
+            else:
+                notes, scope = [f"{k:,.0f} km" for k in RKM], "network km at High+"
+            with st.container(key="fs_days"):
+                day_buttons(notes, [T.CLASS_COLORS[3]] * len(fut),
+                            U._sec("7 days", U.badge("sl_outlook", where="right"), note=scope))
 
         ahead = (sel_day.date() - date.today()).days
         map_name = f"Roads by outlook · {day_name(di)}"
@@ -1285,6 +1417,7 @@ def render(shell) -> None:
                     (f"{100 * r_high / r_assessed:.0f}% of the route" if r_assessed else
                      "of the route"), long_day(di) + later, T.CLASS_COLORS[3],
                     T.CLASS_TEXT[3], "🛣️", "sl_outlook"))
+                picker()
                 rmx = max(r_km_by_class) or 1.0
                 panel.show(
                     U._sec("Route by level", U.badge("sl_outlook", where="right"), note="km")
@@ -1304,6 +1437,7 @@ def render(shell) -> None:
                     "High or above", f"{high_km:,.0f}<small style='font-size:1.1rem;margin-left:7px'>km"
                     "</small>", "of main road, statewide", long_day(di) + later,
                     T.CLASS_COLORS[3], T.CLASS_TEXT[3], "🛣️", "sl_outlook"))
+                picker()
                 rows_ = ""
                 for h in spots[:5]:
                     near, dkm = G.nearest_place(h["lat"], h["lon"], PLACES)
@@ -1448,12 +1582,8 @@ def render(shell) -> None:
                             syms=U.sym("line", "not assessed", T.NOT_ASSESSED)),
                             unsafe_allow_html=True)
 
-        # ── right: the day picker, road by level, the forecast ──────────────
+        # ── right: the network by level, the forecast ───────────────────────
         with cr, st.container(key="fs_col_r"):
-            with st.container(key="fs_r_a"):
-                day_buttons([f"{k:,.0f} km" for k in RKM], [T.CLASS_COLORS[3]] * len(fut),
-                            U._sec("7 days", U.badge("sl_outlook", where="left"),
-                                   note="network km at High+"))
             with st.container(key="fs_r_b"):
                 kmx = max(km_by_class) or 1.0
                 st.markdown(
@@ -1468,12 +1598,24 @@ def render(shell) -> None:
                     + ("Today" if ahead == 0 else f"{ahead} day{'s' if ahead != 1 else ''} ahead")
                     + f" · {assessed_km:,.0f} km assessed</div>", unsafe_allow_html=True)
             with st.container(key="fs_r_c"):
-                st.markdown(U._sec("The ground itself", U.badge("sl_outlook", where="left"))
-                            + "<div class='fs-foot' style='margin:0 0 8px'>"
+                # the land by level that day, beside the network by level: the
+                # box held one sentence and a button (2026-11-04)
+                a_ = cls[cls > 0]
+                lsh = [float((a_ == i + 1).mean()) if a_.size else 0.0 for i in range(5)]
+                st.markdown(U._sec("The ground itself", U.badge("sl_outlook", where="left"),
+                                   note="share of assessed land")
+                            + U.hbars([(T.CLASS_NAMES[i], lsh[i], pc(lsh[i]), T.CLASS_COLORS[i],
+                                        f"{pc(lsh[i])} of the assessed land is at "
+                                        f"{T.CLASS_NAMES[i]} {'today' if ahead == 0 else 'that day'}.")
+                                       for i in range(4, -1, -1)], max(lsh) or 1.0)
+                            + "<div class='fs-foot' style='margin:6px 0 8px'>"
                             f"{pc(HI[n])} of assessed land is at High or above "
                             f"{'today' if ahead == 0 else 'that day'}.</div>",
                             unsafe_allow_html=True)
                 to_view("Forecast", "📍  Open the landslide forecast", "sl_to_forecast")
+
+        # ── the whole network, or the route, that day ────────────────────────
+        st.markdown(state_strip, unsafe_allow_html=True)
 
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
         if route:

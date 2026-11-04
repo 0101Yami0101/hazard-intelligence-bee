@@ -93,7 +93,7 @@ def _open(slug: str | None) -> None:
             del st.query_params["m"]
     # A module switch must not carry the previous one's map camera or selected
     # day across — those keys mean different things in different modules.
-    for k in ("map_target", "day_i", "view"):
+    for k in ("map_target", "day_i", "sl_week", "view"):
         st.session_state.pop(k, None)
 
 
@@ -259,12 +259,19 @@ if product is None:
     # tiles exist, since the listener reads the module's name and accent out
     # of the tile it was clicked in.
     splash.arm()
+    # Back at the top on ARRIVAL only — the first visit, or the way back from
+    # a module — never on a rerun while the visitor is already reading here.
+    # Last on the page, so drawing it or not never moves the scripts above.
+    if not st.session_state.get("_on_landing"):
+        splash.to_top()
+    st.session_state["_on_landing"] = True
     st.stop()
 
 
 # ─────────────────────────── inside a module ─────────────────────────────────
 # The spine is loaded ONCE, here, and handed down. A product that loaded the
 # grid itself could disagree with the one the shell drew the boundary on.
+st.session_state["_on_landing"] = False    # the next landing is an arrival
 GRID, GEO = load_base()
 ELEV = load_elevation()
 LOC = resolve_visitor(GRID, GEO.towns, GEO.districts)

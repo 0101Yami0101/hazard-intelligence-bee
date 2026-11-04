@@ -251,6 +251,29 @@ LAND_DISMISS_JS = """
 </script>
 """ % {"ID": _OVERLAY_ID}
 
+# Drawn only when the visitor ARRIVES on the landing page (first visit, or
+# back from a module): the page opens at its top. Streamlit keeps one scroll
+# position for the whole app, so the landing used to open as far down as the
+# module had been scrolled. Its own iframe, not a switch inside
+# LAND_DISMISS_JS: a script whose text changed between reruns would be
+# rebuilt and replay the landing's entry animation. Run again as the cover
+# comes off, since Streamlit can put the old position back a beat later.
+TOP_JS = """
+<script>
+(function () {
+  const win = window.parent, doc = win.document;
+  const top = () => {
+    doc.querySelectorAll('[data-testid="stMain"], [data-testid="stAppViewContainer"], '
+                         + 'section.main, .main').forEach((el) => { el.scrollTop = 0; });
+    win.scrollTo(0, 0);
+  };
+  top();
+  requestAnimationFrame(() => requestAnimationFrame(top));
+  [150, 400, 700].forEach((t) => setTimeout(top, t));
+})();
+</script>
+"""
+
 
 def arm() -> None:
     """Call on the landing page, after the module tiles exist."""
@@ -279,3 +302,8 @@ def dismiss_landing() -> None:
     """Call at the very end of the LANDING PAGE's render, whether it was
     reached via cold_start() or arm_home()."""
     components.html(LAND_DISMISS_JS, height=0)
+
+
+def to_top() -> None:
+    """Call on the landing page on ARRIVAL only (see app.py): back to its top."""
+    components.html(TOP_JS, height=0)

@@ -105,7 +105,7 @@ ER_TIERS = {
 
 FS_CSS = """
 <style>
-.block-container{max-width:1720px!important;padding-top:1.5rem!important;}
+.block-container{max-width:1720px!important;padding-top:calc(.5rem + 25px)!important;}
 /* ---- kinds of number ---- */
 .fs-badge{display:inline-flex;align-items:center;gap:4px;font:700 .6rem/1.65 Inter,sans-serif;
   letter-spacing:.09em;text-transform:uppercase;color:var(--c);border:1px solid var(--c);
@@ -153,6 +153,42 @@ FS_CSS = """
   text-transform:uppercase;margin-right:3px;}
 /* ---- tiles ---- */
 .fs-tiles{display:grid;gap:10px;margin-bottom:12px;}
+/* Fit the main row (place | map | side) on a laptop screen without a scroll
+   (2026-11-04; measured at 1536 x 730, a 1536 x 864 screen less the browser's
+   own bars). The map keeps its 480 px; the room comes from elsewhere:
+   - a block that only carries a <style> draws nothing, yet took a 16 px gap
+     at the top of the page (three of them: 48 px). Its styles still apply.
+   - the left column, the map card and the day picker space their blocks
+     closer than Streamlit's 1 rem. */
+[data-testid="stElementContainer"]:has([data-testid="stMarkdownContainer"] > :is(style,link)):not(:has([data-testid="stMarkdownContainer"] > :not(style,link))){display:none!important;}
+.st-key-fs_col_l,.st-key-fs_mapcard{gap:.55rem!important;}
+/* The page now starts under Streamlit's top bar (60 px, see-through). The bar
+   holds nothing but the button that reopens the side menu, so clicks pass
+   through it to the search box beneath, except on its own buttons. On a
+   narrow screen, where the page has no side margin, the title steps aside
+   for that button while the menu is closed. */
+[data-testid="stHeader"],[data-testid="stHeader"] *{pointer-events:none!important;}
+[data-testid="stHeader"] :is(button,a),[data-testid="stHeader"] :is(button,a) *{pointer-events:auto!important;}
+@media (max-width:863px){
+  .stApp:has([data-testid="stSidebar"][aria-expanded="false"]) .st-key-fs_head > div > [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child{padding-left:42px;}
+}
+.st-key-fs_days{gap:.4rem!important;}
+/* a block of bars marked fs-grow spreads its rows over the spare height */
+.st-key-fs_main .fs-grow:has(> .fs-hb){display:flex;flex-direction:column;justify-content:space-evenly;}
+/* the map card's title row: its menu button no taller than the title */
+.st-key-fs_mapcard [data-testid="stPopover"] button,.st-key-fs_mapcard [data-testid="stButtonGroup"] button{min-height:0!important;padding-top:3px!important;padding-bottom:3px!important;}
+/* the 7-day picker under the headline (fs_days): each row of buttons stays
+   one row, four across, on every screen; Streamlit would stack them on a phone */
+.st-key-fs_days [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important;gap:.4rem!important;}
+.st-key-fs_days [data-testid="stColumn"]{flex:1 1 0!important;min-width:0!important;width:auto!important;}
+.st-key-fs_days button{padding-left:2px!important;padding-right:2px!important;min-height:0!important;}
+.st-key-fs_days button p{font-size:.8rem;line-height:1.25;}
+/* with a day picked, the eighth slot: back to the whole week (week_back) */
+.st-key-fs_days :is(.st-key-flv_week,.st-key-sl_week_btn) button{height:100%;border:1px dashed
+  color-mix(in srgb,var(--accent) 60%,transparent)!important;background:transparent!important;}
+.st-key-fs_days :is(.st-key-flv_week,.st-key-sl_week_btn) button p{color:var(--accent);font-weight:700;font-size:.7rem!important;white-space:nowrap;}
+.st-key-fs_days :is(.st-key-flv_week,.st-key-sl_week_btn),
+.st-key-fs_days [data-testid="stColumn"]:has(:is(.st-key-flv_week,.st-key-sl_week_btn)) > div{height:100%;}
 .fs-state{border:1px dashed color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:16px;
   padding:10px 12px 0;margin:14px 0 12px;background:color-mix(in srgb,var(--accent) 4%,transparent);}
 .fs-state-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 9px;}
@@ -173,7 +209,7 @@ FS_CSS = """
 .fs-tile-s{font-size:.72rem;color:var(--dim);margin-top:2px;line-height:1.35;
   overflow:hidden;text-overflow:ellipsis;}
 /* ---- hero (the headline outlook) ---- */
-.fs-hero{position:relative;border-radius:16px;padding:14px 16px 12px;margin-bottom:12px;
+.fs-hero{position:relative;border-radius:16px;padding:12px 15px 10px;margin-bottom:4px;
   border:1px solid color-mix(in srgb,var(--c) 55%,var(--line));
   background:radial-gradient(420px 170px at 0% 0%,color-mix(in srgb,var(--c) 28%,transparent),
              transparent 72%),linear-gradient(180deg,var(--panel-2),var(--panel));}
@@ -186,9 +222,9 @@ FS_CSS = """
 .fs-hero-sub{font-size:.74rem;color:var(--mut);margin-top:1px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;}
 .fs-hero-row{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;
-  flex-wrap:wrap;margin:12px 0 3px;}
+  flex-wrap:wrap;margin:8px 0 2px;}
 .fs-hero-badge{margin-bottom:6px;}
-.fs-hero-num{font:800 2.8rem/1 Sora,sans-serif;color:var(--t);letter-spacing:-.035em;
+.fs-hero-num{font:800 2.5rem/1 Sora,sans-serif;color:var(--t);letter-spacing:-.035em;
   font-variant-numeric:tabular-nums;}
 .fs-hero-when{font-size:.74rem;color:var(--mut);}
 .fs-spark{display:flex;align-items:flex-end;gap:6px;height:62px;margin-top:10px;}
@@ -254,13 +290,14 @@ FS_CSS = """
   background:color-mix(in srgb,var(--c) 10%,transparent);margin-top:8px;}
 .fs-foot{font-size:.7rem;color:var(--dim);margin-top:8px;}
 /* ---- map legend ---- */
-.fs-legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;}
-.fs-legend .lg{padding:3px 9px;font-size:.72rem;gap:5px;}
+.fs-legend{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;align-items:center;row-gap:5px;}
+.fs-legend .lg{padding:2px 8px;font-size:.68rem;gap:4px;}
+.fs-legend .fs-sym{margin:0 0 0 6px;font-size:.68rem;}
 .fs-legend .lg span{color:var(--dim);font-size:.66rem;}
 .fs-sym{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--mut);
   margin-right:10px;white-space:nowrap;}
 /* ---- 7-day outlook buttons ---- */
-:is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button{padding:6px 2px!important;min-height:0!important;
+:is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button{padding:4px 2px!important;min-height:0!important;
   line-height:1.2!important;border-radius:11px!important;}
 :is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button p{font-size:.7rem!important;}
 :is([class*="st-key-flv_d"],[class*="st-key-flc_d"],[class*="st-key-sl_d"]) button strong{font:700 1.02rem Sora,sans-serif!important;}
@@ -298,7 +335,7 @@ FS_CSS = """
 .fs-rlist,.fs-rows{display:flex;flex-direction:column;}
 .fs-rlist .fs-rrow,.fs-rows .fs-row{flex:1 1 auto;max-height:66px;}
 .fs-rrow.more,.fs-rhead.more{display:none;}
-.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]){flex:1 1 auto;max-height:64px;display:flex;flex-direction:column;}
+.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]){flex:1 1 auto;max-height:46px;display:flex;flex-direction:column;}
 .st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;}
 .st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton > div{flex:1 1 auto;min-height:0;}
 .st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton > div > span,.st-key-fs_main :is([class*="st-key-fs_hot_"],[class*="st-key-fs_pick_"]) .stButton > div > span > span,
@@ -314,6 +351,7 @@ FS_CSS = """
   .st-key-fs_col_r [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_b){grid-column:2;grid-row:1 / span 2;
     align-self:stretch!important;height:100%;}
   .st-key-fs_col_r [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_c){grid-column:1;grid-row:2;align-self:end;}
+  .st-key-fs_col_r:not(:has(.st-key-fs_r_a)) [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_c){grid-row:1;align-self:start;}
   /* the forecast page: its day buttons in one line, its rivers in two columns */
   .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a{flex-direction:row;flex-wrap:wrap;}
   .st-key-fs_col_r:not(:has(.st-key-fs_r_c)) .st-key-fs_r_a > [data-testid="stElementContainer"]{flex:1 1 100%;}
@@ -321,20 +359,6 @@ FS_CSS = """
   .fs-rlist{display:grid;grid-auto-flow:column;grid-template-rows:repeat(5,auto);
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;}
   .fs-rrow.more,.fs-rhead.more{display:grid;}
-}
-@container fsmain (min-width:761px) and (max-width:1303px){
-  /* SlideSense's forecast (its day buttons are sl_d*): the 7 days across the
-     full width in one line, as FloodSense's are; districts and roads under
-     them, side by side. Its two rows of four sit side by side, with the
-     second row's empty slot dropped and the rows sized 4 : 3. */
-  .st-key-fs_col_r:has(.st-key-sl_d0) [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_a){grid-column:1 / span 2;grid-row:1;}
-  .st-key-fs_col_r:has(.st-key-sl_d0) [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_b){grid-column:2;grid-row:2;}
-  .st-key-fs_col_r:has(.st-key-sl_d0) [data-testid="stLayoutWrapper"]:has(> .st-key-fs_r_c){grid-column:1;grid-row:2;align-self:start;}
-  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a{flex-direction:row;flex-wrap:wrap;}
-  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a > [data-testid="stElementContainer"]{flex:1 1 100%;}
-  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]{flex:4 1 0;min-width:0;}
-  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a > [data-testid="stLayoutWrapper"]:last-child{flex-grow:3;}
-  .st-key-fs_col_r:has(.st-key-sl_d0) .st-key-fs_r_a [data-testid="stColumn"]:not(:has(button)){display:none;}
 }
 @container fsmain (max-width:760px){
   [data-testid="stColumn"]:has(.st-key-fs_col_l),[data-testid="stColumn"]:has(.st-key-fs_col_m),[data-testid="stColumn"]:has(.st-key-fs_col_r){flex:1 1 100%!important;min-width:0;}
@@ -437,17 +461,32 @@ def _tiles(items: list[str], cols: int, grow: bool = False) -> str:
             f"{''.join(items)}</div>")
 
 
-def statewide(items: list[str], cols: int, when: str = "") -> str:
+def statewide(items: list[str], cols: int, when: str = "", title: str = "All of Arunachal",
+              pill: str = "Statewide · the same whichever place you pick",
+              tone: str | None = None) -> str:
     """The statewide figures, in their own labelled frame, BELOW the main row.
 
     They used to sit above the map, where visitors read them as figures for
     the place they had picked; they never change with the place. So they come
-    after the place, the map and the side panel, and say so (2026-11-04)."""
-    return ("<div class='fs-state'><div class='fs-state-h'>"
-            "<span class='fs-state-t'>All of Arunachal</span>"
-            "<span class='fs-state-p'>Statewide · the same whichever place you pick</span>"
+    after the place, the map and the side panel, and say so (2026-11-04).
+    `title` / `pill` / `tone` let a page say WHICH whole it is (the Roads page:
+    the whole network, or one route, each in its own colour)."""
+    return (f"<div class='fs-state'{f' style=--accent:{tone}' if tone else ''}>"
+            "<div class='fs-state-h'>"
+            f"<span class='fs-state-t'>{title}</span>"
+            f"<span class='fs-state-p'>{pill}</span>"
             + (f"<span class='fs-state-n'>{when}</span>" if when else "")
             + "</div>" + _tiles(items, cols) + "</div>")
+
+
+def week_back(key: str) -> bool:
+    """The way back to the whole week, in both modules, drawn in the empty
+    eighth slot of the 7-day row once a day is picked. The headline card
+    shows the whole week until then; the week is never a day box with a
+    number (it used to be, as "7 days" in front of the days, and read as an
+    eighth day). True when it is clicked."""
+    return st.button("Whole week  \n**↩ back**", key=key, width="stretch",
+                     help="Back to the whole week: the card, the map and the figures.")
 
 
 def _sec(title: str, *extra: str, note: str = "") -> str:
@@ -847,8 +886,9 @@ def legend(names, colors, shares=None, subs=None, tip: str = "", syms: str = "")
         + (f" <span>{subs[j]}</span>" if subs else "")
         + (f"<b>{100*shares[j]:.0f}%</b>" if shares is not None else "") + "</div>"
         for j, (n, c) in enumerate(zip(names, colors)))
-    return (f"<div class='fs-legend'>{chips}{_i(tip, 'left') if tip else ''}</div>"
-            + (f"<div class='fs-legend' style='margin-top:6px'>{syms}</div>" if syms else ""))
+    # one block, chips then symbols: two separate lines cost the map card a
+    # line of height the screen does not have (2026-11-04)
+    return f"<div class='fs-legend'>{chips}{_i(tip, 'left') if tip else ''}{syms}</div>"
 
 
 def hero(word: str, value: str, sub: str, when: str, color: str, text: str,
