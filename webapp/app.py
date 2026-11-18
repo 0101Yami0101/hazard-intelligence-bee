@@ -1,4 +1,4 @@
-"""SlopeSense, the hazard intelligence platform — Arunachal Pradesh.
+"""SlopeSense, the hazard intelligence platform.
 
 Names since 2026-10-11: the PLATFORM is SlopeSense (Hazard Intelligence
 Platform). Its landslide module is SlideSense — the one that was called
@@ -43,11 +43,11 @@ from core.bundle import load_base, load_elevation
 from core.location import resolve_visitor
 from core.shell import Shell
 
-st.set_page_config(page_title="SlopeSense · Hazard Intelligence Platform · Arunachal Pradesh",
+st.set_page_config(page_title="SlopeSense · Hazard Intelligence Platform",
                    page_icon="◎", layout="wide",
                    initial_sidebar_state="expanded",
-                   menu_items={"About": "Landslide and flood forecasting for "
-                                        "Arunachal Pradesh."})
+                   menu_items={"About": "Landslide, flood and soil erosion "
+                                        "intelligence."})
 st.markdown(T.CSS, unsafe_allow_html=True)
 # Warm the TLS handshake for the tile hosts before the map asks for them.
 st.markdown(
@@ -181,7 +181,7 @@ if product is None:
             "<div class='land-head' id='lp-top'><div class='land-logo'>◎</div>"
             "<div class='land-title'>SLOPESENSE"
             "<span>Hazard Intelligence Platform</span>"
-            "<small>Arunachal Pradesh</small></div></div>" + LP.hero_lede(),
+            "</div></div>" + LP.hero_lede(),
             unsafe_allow_html=True)
 
         mains = [p for p in P.REGISTRY if p.kind == "product"]

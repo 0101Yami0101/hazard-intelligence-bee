@@ -486,7 +486,7 @@ def nxt() -> str:
       <div class='lp-comein'><em>Where you come in</em><span class='lp-chip'>a hazard you worry about</span>
       <span class='lp-chip'>a place you are responsible for</span>
       <span class='lp-chip'>records you already hold</span></div>
-      <p class='lp-foot'><span>SlopeSense, Hazard Intelligence Platform · Arunachal Pradesh · built by
+      <p class='lp-foot'><span>SlopeSense, Hazard Intelligence Platform · built by
       <a href='{COMPANY_URL}' target='_blank' rel='noopener'>BEE Solutions</a></span>
       <a href='#lp-top'>Back to the top ↑</a></p>
     </section>""")
